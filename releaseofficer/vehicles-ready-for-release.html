@@ -1742,34 +1742,23 @@
         await refreshData();
       };
 
-      async function sendReleaseEmail(email, name, plate) {
-        const url = "https://api.brevo.com/v3/smtp/email";
-        const apiKey = "YOUR_BREVO_KEY";
-
-        const body = {
-          sender: { name: "LTO Releasing", email: "lawrencekier14@gmail.com" },
-          to: [{ email: email, name: name }],
-          subject: `Vehicle Released - ${plate}`,
-          htmlContent: `
-                    <div style="font-family:Arial; padding:20px; border:1px solid #eee;">
-                        <h2 style="color:#2563eb;">Vehicle Release Confirmation</h2>
-                        <p>Hello <strong>${name}</strong>,</p>
-                        <p>Your vehicle (${plate}) has been officially released.</p>
-                        <p>You may now exit the impound facility.</p>
-                    </div>
-                `,
-        };
-
-        if (apiKey === "YOUR_BREVO_KEY") return;
-
-        await fetch(url, {
+      async function sendEmail(data) {
+        const response = await fetch("/api/send-email", {
           method: "POST",
-          headers: {
-            accept: "application/json",
-            "api-key": apiKey,
-            "content-type": "application/json",
-          },
-          body: JSON.stringify(body),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        if (!response.ok) throw new Error("Failed to send email");
+        return await response.json();
+      }
+
+      // Release Email function
+      async function sendReleaseEmail(email, name, plate) {
+        return await sendEmail({
+          type: "release",
+          email,
+          name,
+          plate,
         });
       }
 

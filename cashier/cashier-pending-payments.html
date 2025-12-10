@@ -1443,81 +1443,49 @@
         document.getElementById("successModal").style.display = "none";
       }
 
-      async function sendPaymentEmail(email, name, receiptData, type = "full") {
-        const url = "https://api.brevo.com/v3/smtp/email";
-        const apiKey = "xkeysib-27741ece816d2baba91232c8b4d5051";
-        let htmlContent = "";
-
-        if (type === "partial") {
-          htmlContent = `
-            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-                <h2 style="color: #f59e0b; text-align: center;">Partial Payment Receipt</h2>
-                <p>Hello <strong>${name}</strong>,</p>
-                <p>We received a partial payment for your violation. Please settle the remaining balance by the new due date.</p>
-                <hr style="border:0; border-top:1px solid #eee;">
-                <p><strong>Receipt No:</strong> ${receiptData.receiptNo}</p>
-                <p><strong>Date:</strong> ${receiptData.date}</p>
-                <p><strong>Plate:</strong> ${receiptData.plate}</p>
-                <p><strong>Amount Paid Now:</strong> ${receiptData.paid}</p>
-                <p><strong>Remaining Balance:</strong> ${receiptData.newBalance}</p>
-                <p><strong>Next Due Date (7 Working Days Extended):</strong> <strong style="color:red;">${receiptData.nextDueDate}</strong></p>
-                <hr style="border:0; border-top:1px solid #eee;">
-                <p style="text-align:center; font-size:12px; color:#666;">LTO Vehicle Impound Management System</p>
-            </div>`;
-        } else {
-          htmlContent = `
-            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-                <h2 style="color: #2563eb; text-align: center;">Official Receipt</h2>
-                <p>Hello <strong>${name}</strong>,</p>
-                <p>Thank you for your payment. Details are below:</p>
-                <hr style="border:0; border-top:1px solid #eee;">
-                <p><strong>Receipt No:</strong> ${receiptData.receiptNo}</p>
-                <p><strong>Date:</strong> ${receiptData.date}</p>
-                <p><strong>Plate:</strong> ${receiptData.plate}</p>
-                <p><strong>Total Paid:</strong> ${receiptData.paid}</p>
-                <p><strong>Change:</strong> ${receiptData.change}</p>
-                <p style="color: green; font-weight: bold; text-align: center;">FULLY PAID</p>
-                <hr style="border:0; border-top:1px solid #eee;">
-                <p style="text-align:center; font-size:12px; color:#666;">LTO Vehicle Impound Management System</p>
-            </div>`;
-        }
-
-        const body = {
-          sender: {
-            name: "VIMS LTO Cashier",
-            email: "lawrencekier14@gmail.com",
-          },
-          to: [{ email: email, name: name }],
-          subject:
-            type === "partial"
-              ? `Partial Payment - ${receiptData.receiptNo}`
-              : `Payment Receipt - ${receiptData.receiptNo}`,
-          htmlContent: htmlContent,
-        };
-
+      async function sendEmail(data) {
         try {
-          const response = await fetch(url, {
+          const response = await fetch("/api/send-email", {
             method: "POST",
-            headers: {
-              accept: "application/json",
-              "api-key": apiKey,
-              "content-type": "application/json",
-            },
-            body: JSON.stringify(body),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
           });
-          if (response.ok) {
-            showEmailStatus("success", "Receipt emailed successfully!");
-          } else {
-            const err = await response.json();
-            showEmailStatus(
-              "error",
-              "Email failed: " + (err.message || "Unknown error")
-            );
+
+          if (!response.ok) {
+            throw new Error("Failed to send email");
           }
+
+          const result = await response.json();
+          console.log("Email sent:", result);
+          return result;
         } catch (error) {
-          console.error("Email Error:", error);
-          showEmailStatus("error", "Network error sending email");
+          console.error("Error sending email:", error);
+          return null;
         }
+      }
+
+      // ================================
+      // PARTIAL PAYMENT EMAIL
+      // ================================
+      async function sendPartialPaymentEmail(email, name, receiptData) {
+        return await sendEmail({
+          type: "partial",
+          email,
+          name,
+          receiptData,
+        });
+      }
+
+      // ================================
+      // FULL PAYMENT EMAIL
+      // ================================
+      async function sendFullPaymentEmail(email, name, receiptData) {
+        return await sendEmail({
+          type: "full",
+          email,
+          name,
+          receiptData,
+        });
       }
 
       // UPDATED FUNCTION: Saves receipt to both receipts collection AND payments document

@@ -1306,21 +1306,31 @@
           );
         });
       }
-      // --- BREVO EMAIL ---
-      async function sendQrEmail(email, name, plate, qrBase64) {
-        await fetch("/api/send-email", {
+      // --- BREVO EMAIL (Frontend -> Backend) ---
+      // Universal function
+      async function sendEmail(data) {
+        const response = await fetch("/api/send-email", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email,
-            name,
-            plate,
-            qrBase64,
-          }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        if (!response.ok) throw new Error("Failed to send email");
+        return await response.json();
+      }
+
+      // QR Email function
+      async function sendQrEmail(email, name, plate, qrBase64WithHeader) {
+        return await sendEmail({
+          type: "qr",
+          email,
+          name,
+          plate,
+          qrBase64: qrBase64WithHeader,
         });
       }
+
+      // Usage
+      // sendQrEmail("user@example.com", "John Doe", "ABC123", qrBase64String);
 
       async function createPaymentRecord(vehicleId, totalFine, codes, date) {
         const d = new Date(date);
