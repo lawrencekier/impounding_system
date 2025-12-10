@@ -1,16 +1,35 @@
 export default async function handler(req, res) {
+  // Add CORS headers
+  res.setHeader("Access-Control-Allow-Credentials", true);
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET,OPTIONS,PATCH,DELETE,POST,PUT"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+  );
+
+  if (req.method === "OPTIONS") {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const {
-    type, // qr, partial, full, release
-    email,
-    name,
-    plate,
-    qrBase64,
-    receiptData,
-  } = req.body;
+  // Debug: Check if API key exists
+  console.log("API Key exists:", !!process.env.BREVO_API_KEY);
+  console.log(
+    "API Key first 10 chars:",
+    process.env.BREVO_API_KEY?.substring(0, 10)
+  );
+
+  const { type, email, name, plate, qrBase64, receiptData } = req.body;
+
+  console.log("Received request:", { type, email, name, plate });
 
   let subject = "";
   let htmlContent = "";
@@ -76,15 +95,23 @@ export default async function handler(req, res) {
           <p>Your vehicle (${plate}) has been officially released.</p>
       </div>
     `;
+  } else {
+    return res.status(400).json({ error: "Invalid email type" });
   }
 
-  // If no type matches
-  else {
-    return res.status(400).json({ error: "Invalid email type" });
+  // Check if API key is available
+  if (!process.env.BREVO_API_KEY) {
+    console.error("BREVO_API_KEY is not set!");
+    return res.status(500).json({
+      error: "Server configuration error",
+      details: "API key not configured",
+    });
   }
 
   // ===================== SEND EMAIL USING BREVO =====================
   try {
+    console.log("Sending to Brevo API...");
+
     const apiRes = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -101,8 +128,24 @@ export default async function handler(req, res) {
       }),
     });
 
-    return res.status(200).json({ success: true });
+    const responseData = await apiRes.json();
+    console.log("Brevo response:", responseData);
+
+    if (!apiRes.ok) {
+      console.error("Brevo API error:", responseData);
+      return res.status(500).json({
+        error: "Email sending failed",
+        details: responseData,
+      });
+    }
+
+    return res.status(200).json({ success: true, data: responseData });
   } catch (err) {
-    return res.status(500).json({ error: "Email sending failed", err });
+    console.error("Email sending error:", err);
+    return res.status(500).json({
+      error: "Email sending failed",
+      message: err.message,
+      stack: err.stack,
+    });
   }
 }
