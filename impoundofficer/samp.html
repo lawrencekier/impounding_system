@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Vehicle - LTO VIS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style>
+        /* --- CSS STYLES --- */
+        :root {
+            --lto-blue: #0056a6;
+            --lto-light-blue: #e6f0ff;
+            --lto-dark-blue: #003d7a;
+            --lto-yellow: #ffcc00;
+            --lto-white: #ffffff;
+            --lto-gray: #f5f5f5;
+            --lto-dark-gray: #333333;
+            --lto-light-gray: #e0e0e0;
+            --lto-green: #28a745;
+            --lto-red: #dc3545;
+            --lto-orange: #fd7e14;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: var(--lto-dark-blue);
+            color: var(--lto-white);
+            height: 100vh;
+            position: fixed;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background-color: var(--lto-blue);
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header .logo {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .sidebar-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .sidebar-menu {
+            padding: 15px 0;
+        }
+
+        .sidebar-menu ul {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--lto-white);
+            border-left-color: var(--lto-yellow);
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--lto-light-gray);
+        }
+
+        .page-title h1 {
+            font-size: 24px;
+            color: var(--lto-dark-blue);
+            margin-bottom: 5px;
+        }
+
+        .page-title p {
+            color: var(--lto-dark-gray);
+            font-size: 14px;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-info {
+            text-align: right;
+            margin-right: 15px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--lto-dark-blue);
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: var(--lto-dark-gray);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--lto-blue);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .form-container {
+            background-color: var(--lto-white);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--lto-light-gray);
+        }
+        
+        .form-container .form-section:last-of-type {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 18px;
+            color: var(--lto-dark-blue);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title i {
+            margin-right: 10px;
+            color: var(--lto-blue);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-col {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--lto-dark-gray);
+            font-weight: 500;
+        }
+
+        .required::after {
+            content: " *";
+            color: var(--lto-red);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        input[type="time"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--lto-light-gray);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--lto-blue);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 86, 166, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        /* Violations Checkbox Styles */
+        .violations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .violation-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 15px;
+            border: 1px solid var(--lto-light-gray);
+            border-radius: 6px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .violation-item:hover {
+            border-color: var(--lto-blue);
+            background-color: var(--lto-light-blue);
+        }
+
+        .violation-item.selected {
+            border-color: var(--lto-blue);
+            background-color: var(--lto-light-blue);
+        }
+
+        .violation-checkbox {
+            margin-right: 12px;
+            margin-top: 2px;
+        }
+
+        .violation-details {
+            flex: 1;
+        }
+
+        .violation-code {
+            font-weight: 600;
+            color: var(--lto-dark-blue);
+            margin-bottom: 5px;
+        }
+
+        .violation-description {
+            font-size: 14px;
+            color: var(--lto-dark-gray);
+            margin-bottom: 8px;
+        }
+
+        .violation-penalty {
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+        }
+
+        .fine-amount {
+            color: var(--lto-red);
+            font-weight: 500;
+        }
+
+        .penalty-points {
+            color: var(--lto-orange);
+            font-weight: 500;
+        }
+
+        .selected-violations {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--lto-light-blue);
+            border-radius: 6px;
+            border-left: 4px solid var(--lto-blue);
+        }
+
+        .selected-violations h4 {
+            color: var(--lto-dark-blue);
+            margin-bottom: 10px;
+        }
+
+        .selected-violation-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 86, 166, 0.1);
+        }
+
+        .selected-violation-item:last-child {
+            border-bottom: none;
+        }
+
+        .total-penalty {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid var(--lto-blue);
+            font-weight: 600;
+            color: var(--lto-dark-blue);
+        }
+
+        /* Photo Upload Styles */
+        .photo-upload {
+            opacity: 0.6;
+            cursor: not-allowed !important;
+        }
+
+        .photo-upload:hover {
+            border-color: var(--lto-light-gray) !important;
+            background-color: var(--lto-white) !important;
+        }
+
+        .photo-upload i {
+            font-size: 48px;
+            color: var(--lto-blue);
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: var(--lto-dark-gray);
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: var(--lto-dark-gray);
+            font-size: 12px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .btn i {
+            margin-right: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--lto-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--lto-dark-blue);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--lto-blue);
+            color: var(--lto-blue);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--lto-light-blue);
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--lto-light-gray);
+        }
+
+        /* --- Modal Styles --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1001; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.4); 
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto; 
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%; 
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation-name: animatetop;
+            animation-duration: 0.4s
+        }
+
+        @keyframes animatetop {
+            from {top:-300px; opacity:0}
+            to {top:0; opacity:1}
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-header {
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--lto-light-gray);
+            text-align: center;
+        }
+
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        #qrcodeCanvas {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid var(--lto-light-gray);
+            border-radius: 4px;
+        }
+
+        .qr-info {
+            margin-bottom: 20px;
+        }
+
+        .qr-info h4 {
+            color: var(--lto-dark-blue);
+            margin-bottom: 5px;
+        }
+
+        .qr-info p {
+            font-size: 14px;
+            color: var(--lto-dark-gray);
+        }
+
+        .scanner-info {
+            background: var(--lto-light-blue);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: left;
+            width: 100%;
+        }
+
+        .scanner-info h4 {
+            color: var(--lto-dark-blue);
+            margin-bottom: 10px;
+        }
+
+        .scanner-info ol {
+            padding-left: 20px;
+        }
+
+        .scanner-info li {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+            
+            .sidebar .menu-text, .sidebar-header h2 {
+                display: none;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .violations-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="40" height="40" rx="8" fill="white"/>
+                    <path d="M10 20C10 14.4772 14.4772 10 20 10C25.5228 10 30 14.4772 30 20C30 25.5228 25.5228 30 20 30C14.4772 30 10 25.5228 10 20Z" fill="#0056a6"/>
+                    <rect x="15" y="15" width="10" height="10" rx="2" fill="white"/>
+                </svg>
+            </div>
+            <h2>LTO VIS</h2>
+        </div>
+        <div class="sidebar-menu">
+            <ul>
+                <li><a href="officer-dashboard.html"><i class="fas fa-tachometer-alt"></i> <span class="menu-text">Dashboard</span></a></li>
+                <li><a href="officer-add-vehicle.html" class="active"><i class="fas fa-car-side"></i> <span class="menu-text">Add Vehicle</span></a></li>
+                <li><a href="officer-my-vehicles.html"><i class="fas fa-list"></i> <span class="menu-text">My Vehicles</span></a></li>
+                <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> <span class="menu-text">Logout</span></a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>Add Vehicle</h1>
+                <p>Record a new impounded vehicle.</p>
+            </div>
+            <div class="user-menu">
+                <div class="user-info">
+                    <div class="user-name">Officer Juan</div>
+                    <div class="user-role">Impounding Officer</div>
+                </div>
+                <div class="user-avatar">OJ</div>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <form id="impoundForm">
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-user-circle"></i> Owner Information</h3>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="ownerName" >Owner's Full Name</label>
+                                <input type="text" id="ownerName" placeholder="e.g., Maria Santos Cruz (optional)" >
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="ownerContact">Contact Number</label>
+                                <input type="text" id="ownerContact" placeholder="e.g., 0917xxxxxxx (optional)">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="ownerAddress">Owner Address</label>
+                        <textarea id="ownerAddress" rows="3" placeholder="Complete address of the vehicle owner (optional)"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-car"></i> Vehicle Information</h3>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="plateNumber" class="required">Plate Number</label>
+                                <input type="text" id="plateNumber" placeholder="e.g., ABC 1234" required>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="vehicleType" class="required">Vehicle Type</label>
+                                <select id="vehicleType" required>
+                                    <option value="">Select Vehicle Type</option>
+                                    <option value="sedan">Sedan</option>
+                                    <option value="suv">SUV</option>
+                                    <option value="motorcycle">Motorcycle</option>
+                                    <option value="van">Van</option>
+                                    <option value="truck">Truck</option>
+                                    <option value="bus">Bus</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="vehicleModel" class="required">Vehicle Model</label>
+                                <input type="text" id="vehicleModel" placeholder="e.g., Toyota Vios" required>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="vehicleColor" class="required">Color</label>
+                                <input type="text" id="vehicleColor" placeholder="e.g., Red" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-exclamation-triangle"></i> Violation Information</h3>
+                    <div class="form-group">
+                        <label class="required">Select Violations</label>
+                        <div class="violations-grid" id="violationsContainer">
+                            <!-- Violations will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="selected-violations" id="selectedViolations" style="display: none;">
+                        <h4>Selected Violations</h4>
+                        <div id="selectedViolationsList"></div>
+                        <div class="total-penalty" id="totalPenalty">
+                            Total Fine: ₱0.00 | Total Points: 0
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-map-marker-alt"></i> Impound Details</h3>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="impoundDate" class="required">Impound Date</label>
+                                <input type="date" id="impoundDate" required>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="impoundTime" class="required">Impound Time</label>
+                                <input type="time" id="impoundTime" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="slotNumber" class="required">Slot Number</label>
+                                <input type="text" id="slotNumber" placeholder="e.g., A-15" required>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="towingLocation">Towing Location</label>
+                                <input type="text" id="towingLocation" placeholder="Location where vehicle was towed from">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-camera"></i> Vehicle Photos</h3>
+                    <div class="form-group">
+                        <div class="photo-upload" id="photoUpload">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <div class="upload-text">Photo upload disabled (Upgrade plan to enable)</div>
+                            <div class="upload-subtext">Storage feature requires Blaze plan</div>
+                            <input type="file" id="fileInput" multiple accept="image/*" style="display: none;" disabled>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-sticky-note"></i> Additional Information</h3>
+                    <div class="form-group">
+                        <label for="violationDescription">Violation Description</label>
+                        <textarea id="violationDescription" rows="3" placeholder="Detailed description of the violation..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="conditionNotes">Vehicle Condition Notes</label>
+                        <textarea id="conditionNotes" rows="3" placeholder="Describe the vehicle's current condition, any damages, etc."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="window.location.href='officer-dashboard.html'">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="saveAndGenerateBtn">
+                        <i class="fas fa-qrcode"></i> Save & Generate QR
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <div class="modal-header">
+                <h2>Vehicle Added Successfully!</h2>
+                <p>QR code generated for the impounded vehicle.</p>
+            </div>
+            <div class="modal-body">
+                <canvas id="qrcodeCanvas"></canvas>
+                <div class="qr-info">
+                    <h4>Vehicle: <span id="modalPlateNumber"></span></h4>
+                    <p>Owner: <span id="modalOwnerName"></span></p>
+                    <p>Total Fine: <span id="modalTotalFine"></span></p>
+                </div>
+                
+                <div class="scanner-info">
+                    <h4>Next Steps:</h4>
+                    <ol>
+                        <li>Print this QR code and attach to the vehicle</li>
+                        <li>Scan with any QR scanner to view vehicle details</li>
+                        <li>Manage vehicles in "My Vehicles" section</li>
+                    </ol>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn btn-primary" onclick="printQrSticker()" style="flex: 1;">
+                        <i class="fas fa-print"></i> Print QR Sticker
+                    </button>
+                    <button type="button" class="btn btn-outline" onclick="closeModalAndRedirect()" style="flex: 1;">
+                        <i class="fas fa-list"></i> View My Vehicles
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+   <script type="module">
+    // Import Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+    import { 
+        getFirestore, 
+        collection, 
+        addDoc, 
+        doc, 
+        updateDoc, 
+        getDocs,
+        query,
+        where 
+    } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
+    
+    // Your Firebase config
+    const firebaseConfig = {
+        apiKey: "AIzaSyByzd88bcUAq0VdP0w6oB8W_b2AUgoIzXc",
+        authDomain: "vehicle-impound.firebaseapp.com",
+        projectId: "vehicle-impound",
+        storageBucket: "vehicle-impound.appspot.com",
+        messagingSenderId: "69239563292",
+        appId: "1:69239563292:web:281912e8a38301c0feabd9"
+    };
+    
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // DOM Elements
+    const impoundForm = document.getElementById('impoundForm');
+    const qrModal = document.getElementById('qrModal');
+    const closeModalBtn = document.getElementById('closeModal');
+    const saveBtn = document.getElementById('saveAndGenerateBtn');
+    const qrcodeCanvas = document.getElementById('qrcodeCanvas');
+    const violationsContainer = document.getElementById('violationsContainer');
+    const selectedViolationsDiv = document.getElementById('selectedViolations');
+    const selectedViolationsList = document.getElementById('selectedViolationsList');
+    const totalPenaltyDiv = document.getElementById('totalPenalty');
+    const userMenuName = document.querySelector('.user-name');
+    const userMenuRole = document.querySelector('.user-role');
+    const userAvatar = document.querySelector('.user-avatar');
+
+    let selectedViolations = [];
+    let violationsData = [];
+    let currentUser = null;
+
+    // Authentication state observer
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            console.log("User is signed in:", user.email);
+            // User is signed in, load their data
+            await loadUserData(user);
+            await fetchViolations();
+        } else {
+            // User is signed out, redirect to login
+            console.log("User is signed out, redirecting to login...");
+            window.location.href = '../index.html';
+        }
+    });
+
+    // Load user data from Firestore
+    async function loadUserData(firebaseUser) {
+        try {
+            const usersQuery = query(
+                collection(db, "users"),
+                where("email", "==", firebaseUser.email)
+            );
+            const querySnapshot = await getDocs(usersQuery);
+            
+            if (!querySnapshot.empty) {
+                const userDoc = querySnapshot.docs[0];
+                const userData = userDoc.data();
+                
+                currentUser = {
+                    uid: firebaseUser.uid,
+                    readableId: userData.readableId,
+                    fullname: userData.fullname,
+                    username: userData.username,
+                    role: userData.role,
+                    department: userData.department,
+                    email: userData.email
+                };
+                
+                // Update UI with real user data
+                userMenuName.textContent = currentUser.fullname;
+                userMenuRole.textContent = currentUser.role.toUpperCase();
+                userAvatar.textContent = currentUser.fullname.split(' ').map(n => n[0]).join('').toUpperCase();
+                
+            } else {
+                console.error("No user data found in Firestore");
+                useFallbackUser();
+            }
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+            useFallbackUser();
+        }
+    }
+
+    function useFallbackUser() {
+        currentUser = {
+            readableId: "U-001",
+            fullname: "Officer Mendoza",
+            role: "officer"
+        };
+        
+        userMenuName.textContent = currentUser.fullname;
+        userMenuRole.textContent = currentUser.role.toUpperCase();
+        userAvatar.textContent = "OM";
+    }
+
+    // Logout function
+    async function logout() {
+        try {
+            await signOut(auth);
+            console.log("User signed out successfully");
+            window.location.href = '../index.html';
+        } catch (error) {
+            console.error("Error signing out:", error);
+            alert('Error signing out: ' + error.message);
+        }
+    }
+
+    window.logout = logout;
+
+    // Fetch violations from Firestore
+    async function fetchViolations() {
+        try {
+            console.log("Fetching violations from Firestore...");
+            const violationsQuery = query(
+                collection(db, "violations"),
+                where("status", "==", "active")
+            );
+            const querySnapshot = await getDocs(violationsQuery);
+            
+            violationsData = [];
+            querySnapshot.forEach((doc) => {
+                const violation = doc.data();
+                violationsData.push({
+                    id: doc.id,
+                    code: violation.code,
+                    description: violation.description,
+                    fineAmount: violation.fineAmount,
+                    penaltyPoints: violation.penaltyPoints
+                });
+            });
+
+            console.log("✅ Violations fetched:", violationsData);
+            initializeViolations();
+        } catch (error) {
+            console.error("❌ Error fetching violations:", error);
+            violationsContainer.innerHTML = '<div class="error-message">Error loading violations. Please refresh the page.</div>';
+        }
+    }
+
+    // Initialize violations checkboxes from Firestore data
+    function initializeViolations() {
+        violationsContainer.innerHTML = '';
+        
+        if (violationsData.length === 0) {
+            violationsContainer.innerHTML = '<div class="no-violations">No active violations found in database.</div>';
+            return;
+        }
+
+        violationsData.forEach(violation => {
+            const violationItem = document.createElement('div');
+            violationItem.className = 'violation-item';
+            violationItem.innerHTML = `
+                <input type="checkbox" class="violation-checkbox" id="violation-${violation.code}" 
+                       value="${violation.code}" 
+                       data-id="${violation.id}"
+                       data-fine="${violation.fineAmount}" 
+                       data-points="${violation.penaltyPoints}">
+                <div class="violation-details">
+                    <div class="violation-code">${violation.code}</div>
+                    <div class="violation-description">${violation.description}</div>
+                    <div class="violation-penalty">
+                        <span class="fine-amount">Fine: ₱${violation.fineAmount.toLocaleString()}</span>
+                        <span class="penalty-points">Points: ${violation.penaltyPoints}</span>
+                    </div>
+                </div>
+            `;
+            violationsContainer.appendChild(violationItem);
+
+            // Add click event to the entire item
+            violationItem.addEventListener('click', (e) => {
+                if (e.target.type !== 'checkbox') {
+                    const checkbox = violationItem.querySelector('.violation-checkbox');
+                    checkbox.checked = !checkbox.checked;
+                    updateSelectedViolations(checkbox);
+                }
+            });
+
+            // Add change event to checkbox
+            const checkbox = violationItem.querySelector('.violation-checkbox');
+            checkbox.addEventListener('change', (e) => {
+                updateSelectedViolations(e.target);
+                violationItem.classList.toggle('selected', e.target.checked);
+            });
+        });
+    }
+
+    // Update selected violations display
+    function updateSelectedViolations(checkbox) {
+        const violationCode = checkbox.value;
+        const violationId = checkbox.dataset.id;
+        const fineAmount = parseInt(checkbox.dataset.fine);
+        const penaltyPoints = parseInt(checkbox.dataset.points);
+        const violation = violationsData.find(v => v.code === violationCode);
+
+        if (checkbox.checked) {
+            if (!selectedViolations.find(v => v.code === violationCode)) {
+                selectedViolations.push({
+                    ...violation,
+                    violationId: violationId
+                });
+            }
+        } else {
+            selectedViolations = selectedViolations.filter(v => v.code !== violationCode);
+        }
+
+        updateSelectedViolationsDisplay();
+    }
+
+    // Update the selected violations display
+    function updateSelectedViolationsDisplay() {
+        if (selectedViolations.length === 0) {
+            selectedViolationsDiv.style.display = 'none';
+            return;
+        }
+
+        selectedViolationsDiv.style.display = 'block';
+        selectedViolationsList.innerHTML = '';
+
+        let totalFine = 0;
+        let totalPoints = 0;
+
+        selectedViolations.forEach(violation => {
+            totalFine += violation.fineAmount;
+            totalPoints += violation.penaltyPoints;
+
+            const violationItem = document.createElement('div');
+            violationItem.className = 'selected-violation-item';
+            violationItem.innerHTML = `
+                <span>${violation.code} - ${violation.description}</span>
+                <span>₱${violation.fineAmount.toLocaleString()} | ${violation.penaltyPoints} pts</span>
+            `;
+            selectedViolationsList.appendChild(violationItem);
+        });
+
+        totalPenaltyDiv.innerHTML = `Total Fine: ₱${totalFine.toLocaleString()} | Total Points: ${totalPoints}`;
+    }
+
+    // Generate QR Code function
+    async function generateQrCode(qrData) {
+        return new Promise((resolve, reject) => {
+            QRCode.toCanvas(qrcodeCanvas, qrData, { 
+                errorCorrectionLevel: 'H', 
+                width: 200, 
+                margin: 2 
+            }, (error) => {
+                if (error) {
+                    console.error("QR Code generation failed: ", error);
+                    reject("Failed to generate QR Code image.");
+                } else {
+                    resolve(qrcodeCanvas.toDataURL("image/png"));
+                }
+            });
+        });
+    }
+
+    // Print QR function
+    window.printQrSticker = function() {
+        const qrDataURL = qrcodeCanvas.toDataURL("image/png");
+        const printWindow = window.open('', '', 'width=400,height=400');
+        printWindow.document.write('<html><head><title>Print QR Sticker</title>');
+        printWindow.document.write('<style>body{text-align:center;font-family:sans-serif;} img{max-width:100%;}</style>');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write('<h3>LTO Impound Tag</h3>');
+        printWindow.document.write(`<img src="${qrDataURL}" style="border: 2px solid black; padding: 10px;">`);
+        printWindow.document.write(`<h4>Plate: ${document.getElementById('modalPlateNumber').textContent}</h4>`);
+        printWindow.document.write(`<p>Impound Date: ${document.getElementById('impoundDate').value}</p>`);
+        printWindow.document.write(`<p>Impounding Officer: ${currentUser.fullname}</p>`);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+    };
+
+    function closeModalAndRedirect() {
+        document.getElementById('qrModal').style.display = "none";
+        window.location.href = 'officer-my-vehicles.html';
+    }
+
+    // Event Listeners
+    closeModalBtn.addEventListener('click', () => {
+        qrModal.style.display = "none";
+    });
+
+    window.onclick = (event) => {
+        if (event.target == qrModal) {
+            qrModal.style.display = "none";
+        }
+    };
+
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('impoundDate').value = today;
+
+    // Create payment record in payments collection
+    async function createPaymentRecord(vehicleId, totalFine, violationCodes) {
+        try {
+            const paymentData = {
+                vehicleId: vehicleId, // Link to impoundedVehicles document ID
+                violationCode: violationCodes.join(', '), // Violation code(s)
+                totalFine: totalFine, // Total payment amount
+                balance: totalFine, // Initial balance equals total fine
+                amountPaid: 0, // How much violator pay (initially 0)
+                paymentStatus: 'unpaid', // paid/unpaid/partial paid
+                paymentDate: null, // Date of payment (null initially)
+                cashierId: '', // UID of cashier processing payment (empty initially)
+                orNumber: '', // Official receipt number (empty initially)
+                remarks: 'Vehicle impounded - payment pending', // Optional notes
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            const paymentRef = await addDoc(collection(db, "payments"), paymentData);
+            console.log("✅ Payment record created with ID: ", paymentRef.id);
+            return paymentRef.id;
+        } catch (error) {
+            console.error("❌ Error creating payment record: ", error);
+            throw error;
+        }
+    }
+
+    // Create activity log
+    async function createActivityLog(action, vehicleId, details = '') {
+        try {
+            const logData = {
+                action: action,
+                vehicleId: vehicleId,
+                userId: currentUser.readableId, // readableId reference
+                fullName: currentUser.fullname, // from users
+                timestamp: new Date().toISOString(),
+                details: details
+            };
+
+            const logRef = await addDoc(collection(db, "activityLogs"), logData);
+            console.log("✅ Activity log created with ID: ", logRef.id);
+            return logRef.id;
+        } catch (error) {
+            console.error("❌ Error creating activity log: ", error);
+            throw error;
+        }
+    }
+
+    // Form Submission
+    impoundForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Validation
+        if (selectedViolations.length === 0) {
+            alert('Please select at least one violation');
+            return;
+        }
+
+        const requiredFields = ['plateNumber', 'vehicleType', 'vehicleModel', 'vehicleColor', 'impoundDate', 'impoundTime', 'slotNumber'];
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            const element = document.getElementById(field);
+            if (!element.value.trim()) {
+                isValid = false;
+                element.style.borderColor = 'var(--lto-red)';
+            } else {
+                element.style.borderColor = '';
+            }
+        });
+        
+        if (!isValid) {
+            alert('Please fill in all required fields (marked with *)');
+            return;
+        }
+        
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving Vehicle...';
+        
+        // Calculate total fine and points
+        const totalFine = selectedViolations.reduce((sum, v) => sum + v.fineAmount, 0);
+        const totalPoints = selectedViolations.reduce((sum, v) => sum + v.penaltyPoints, 0);
+
+        // Get violation codes and IDs for reference
+        const violationCodes = selectedViolations.map(v => v.code);
+        const violationIds = selectedViolations.map(v => v.violationId);
+
+        // Gather form data with proper officer reference
+        const formData = {
+            ownerName: document.getElementById('ownerName').value.trim(),
+            ownerContact: document.getElementById('ownerContact').value.trim(),
+            ownerAddress: document.getElementById('ownerAddress').value.trim(),
+            plateNumber: document.getElementById('plateNumber').value.toUpperCase().trim(),
+            vehicleType: document.getElementById('vehicleType').value,
+            vehicleModel: document.getElementById('vehicleModel').value.trim(),
+            vehicleColor: document.getElementById('vehicleColor').value.trim(),
+            violationCode: violationCodes.join(', '),
+            violationIds: violationIds, // Store violation document IDs for reference
+            violationDescription: document.getElementById('violationDescription').value.trim() || 
+                                selectedViolations.map(v => v.description).join(', '),
+            fineAmount: totalFine,
+            penaltyPoints: totalPoints,
+            impoundDate: document.getElementById('impoundDate').value,
+            impoundTime: document.getElementById('impoundTime').value,
+            slotNumber: document.getElementById('slotNumber').value.toUpperCase().trim(),
+            towingLocation: document.getElementById('towingLocation').value.trim(),
+            conditionNotes: document.getElementById('conditionNotes').value.trim(),
+            // PROPER OFFICER REFERENCE - using readableId and fullname (lowercase)
+            impoundingOfficerId: currentUser.readableId, // Reference to users.readableId
+            impoundingOfficerName: currentUser.fullname, // Officer name for display
+            status: "impounded",
+            photoUrls: [],
+            qrCodeImage: null,
+            qrData: null, // Will be set to doc ID
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        try {
+            // 1. Save to Firestore
+            console.log("Saving vehicle to Firestore...");
+            const docRef = await addDoc(collection(db, "impoundedVehicles"), formData);
+            const docId = docRef.id;
+            console.log("✅ Document created with ID: ", docId);
+
+            // 2. Create payment record in payments collection
+            await createPaymentRecord(docId, totalFine, violationCodes);
+
+            // 3. Generate QR Code
+            const baseUrl = `${window.location.protocol}//${window.location.host}`;
+            const qrDataForScanner = `${baseUrl}/impoundofficer/scanner.html?id=${docId}`;
+            const qrImageBase64 = await generateQrCode(qrDataForScanner);
+
+            // 4. Update document with QR code and vehicleId
+            await updateDoc(doc(db, "impoundedVehicles", docId), {
+                qrCodeImage: qrImageBase64,
+                qrData: docId, // Encoded data for QR (doc ID)
+                vehicleId: docId
+            });
+
+            // 5. Create activity log for impound action
+            const logDetails = `Vehicle ${formData.plateNumber} impounded with ${selectedViolations.length} violation(s). Total fine: ₱${totalFine.toLocaleString()}`;
+            await createActivityLog('impounded', docId, logDetails);
+
+            // 6. Show success modal
+            document.getElementById('modalPlateNumber').textContent = formData.plateNumber;
+            document.getElementById('modalOwnerName').textContent = formData.ownerName || 'Not provided';
+            document.getElementById('modalTotalFine').textContent = `₱${totalFine.toLocaleString()}`;
+            qrModal.style.display = "block";
+
+            // 7. Reset form
+            impoundForm.reset();
+            document.getElementById('impoundDate').value = today;
+            selectedViolations = [];
+            updateSelectedViolationsDisplay();
+            initializeViolations();
+
+            console.log("✅ Vehicle added successfully with officer reference, payment record, and activity log!");
+
+        } catch (error) {
+            console.error("❌ Error saving vehicle: ", error);
+            alert("Error saving vehicle: " + error.message);
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-qrcode"></i> Save & Generate QR';
+        }
+    });
+</script>
+</body>
+</html>

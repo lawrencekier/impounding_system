@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Impounded Vehicles - VIMS</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style>
+      :root {
+        /* Palette */
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --sidebar-bg: #1e293b;
+        --bg-body: #f1f5f9;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+
+        --radius: 12px;
+        --anim-speed: 0.25s;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        background-color: var(--bg-body);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        color: var(--text-main);
+      }
+
+      /* --- Sidebar --- */
+      .sidebar {
+        width: 260px;
+        background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+        color: white;
+        height: 100vh;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+        transition: var(--anim-speed);
+      }
+
+      .sidebar-header {
+        padding: 30px 24px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .logo svg {
+        width: 40px;
+        height: 40px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+      }
+      .sidebar-header h2 {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+
+      .sidebar-menu {
+        overflow-y: auto;
+        padding: 20px 15px;
+      }
+      .sidebar-menu ul {
+        list-style: none;
+      }
+      .sidebar-menu a {
+        display: flex;
+        align-items: center;
+        padding: 14px 20px;
+        color: #94a3b8;
+        text-decoration: none;
+        transition: var(--anim-speed);
+        border-radius: 8px;
+        margin-bottom: 5px;
+        font-weight: 500;
+        font-size: 14px;
+      }
+      .sidebar-menu a:hover,
+      .sidebar-menu a.active {
+        background-color: rgba(255, 255, 255, 0.08);
+        color: white;
+      }
+      .sidebar-menu a.active {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      }
+      .sidebar-menu i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+        font-size: 16px;
+      }
+
+      .sidebar-footer {
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.2);
+      }
+      /* FIXED: Logout at very bottom */
+      .sidebar-logout {
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.2);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        /* No margin-top needed because sidebar-content is flex column */
+      }
+      .sidebar-logout ul {
+        list-style: none;
+      }
+      .sidebar-logout a {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        color: #fca5a5;
+        text-decoration: none;
+        transition: 0.3s;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+      .sidebar-logout a:hover {
+        background-color: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+      }
+      .sidebar-logout i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+      }
+
+      /* --- Main Content --- */
+      .main-content {
+        flex: 1;
+        margin-left: 260px;
+        padding: 30px 40px;
+        transition: var(--anim-speed);
+        padding-bottom: 80px;
+        position: relative;
+      }
+
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 35px;
+        position: relative;
+      }
+      .page-title h1 {
+        font-size: 26px;
+        color: var(--text-main);
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin-top: 4px;
+      }
+
+      /* User Menu */
+      .user-menu {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        padding: 6px 8px 6px 16px;
+        border-radius: 50px;
+        background: white;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+      }
+      .user-menu:hover,
+      .user-menu.active {
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+      }
+      .user-info {
+        text-align: right;
+        margin-right: 12px;
+      }
+      .user-name {
+        font-weight: 700;
+        color: var(--text-main);
+        font-size: 14px;
+      }
+      .user-role {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .user-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+      }
+
+      /* Updated Profile Dropdown */
+      .profile-dropdown {
+        position: absolute;
+        top: 70px;
+        right: 0;
+        width: 280px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-15px) scale(0.98);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        z-index: 2000;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      .profile-dropdown.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0) scale(1);
+        pointer-events: all;
+      }
+      .dropdown-header {
+        padding: 25px;
+        background: linear-gradient(to right, #f8fafc, #f1f5f9);
+        text-align: center;
+        border-bottom: 1px solid var(--border);
+      }
+      .dropdown-avatar {
+        width: 70px;
+        height: 70px;
+        background: var(--primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+        margin: 0 auto 10px;
+        border: 4px solid white;
+        box-shadow: var(--shadow-sm);
+      }
+      .dropdown-name {
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--text-main);
+      }
+      .dropdown-role {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+      .dropdown-body {
+        padding: 10px;
+      }
+      .dropdown-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        color: var(--text-main);
+        text-decoration: none;
+        transition: 0.2s;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        gap: 10px;
+      }
+      .dropdown-item:hover {
+        background-color: var(--bg-body);
+        color: var(--primary);
+      }
+      .dropdown-item.logout {
+        color: #ef4444;
+        margin-top: 5px;
+      }
+
+      /* --- Stats --- */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 24px;
+        margin-bottom: 35px;
+      }
+      .stat-card {
+        background: var(--bg-card);
+        padding: 25px;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        transition: 0.3s;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+      }
+      .stat-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 5px;
+        letter-spacing: -1px;
+        z-index: 2;
+        position: relative;
+      }
+      .stat-label {
+        font-size: 13px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        z-index: 2;
+        position: relative;
+      }
+      .stat-icon {
+        position: absolute;
+        right: 15px;
+        top: 20px;
+        font-size: 48px;
+        opacity: 0.15;
+        color: var(--sidebar-bg);
+        transform: rotate(-10deg);
+        z-index: 1;
+      }
+
+      /* --- Actions Toolbar --- */
+      .toolbar-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+
+      /* Search Box */
+      .search-box {
+        display: flex;
+        align-items: center;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+      }
+      .search-input {
+        border: none;
+        padding: 10px 15px;
+        outline: none;
+        font-size: 14px;
+        width: 250px;
+      }
+      .search-btn {
+        background: white;
+        border: none;
+        border-left: 1px solid var(--border);
+        padding: 10px 15px;
+        color: var(--primary);
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .search-btn:hover {
+        background: #f8fafc;
+      }
+
+      /* Buttons & Filter Wrapper */
+      .actions-right {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .filter-wrapper {
+        position: relative;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+        font-size: 14px;
+        text-decoration: none;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+      .btn-outline {
+        background: white;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        box-shadow: var(--shadow-sm);
+      }
+      .btn-outline:hover,
+      .btn-outline.active {
+        background: var(--bg-body);
+        color: var(--text-main);
+        border-color: var(--primary);
+      }
+      .btn-refresh {
+        background: white;
+        border: 1px solid var(--border);
+        color: var(--primary);
+        width: 40px;
+        height: 40px;
+        justify-content: center;
+        padding: 0;
+        border-radius: 50%;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+      }
+      .btn-refresh:hover {
+        background: #eff6ff;
+        transform: rotate(15deg);
+      }
+      .spinning {
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* --- Filter Modal (Fixed Position) --- */
+      .filter-modal {
+        display: none;
+        position: absolute;
+        top: 110%; /* Directly below the button */
+        right: 0; /* Align to the RIGHT edge */
+        width: 280px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        border: 1px solid var(--border);
+        padding: 20px;
+        z-index: 9999; /* High z-index */
+      }
+      .filter-modal.show {
+        display: block;
+        animation: slideDown 0.2s ease-out;
+      }
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .filter-group {
+        margin-bottom: 15px;
+      }
+      .filter-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        margin-bottom: 5px;
+        display: block;
+      }
+      .filter-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 14px;
+        outline: none;
+      }
+      .filter-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+      }
+      .btn-full {
+        flex: 1;
+        justify-content: center;
+      }
+      .btn-ghost {
+        background: #f1f5f9;
+        color: var(--text-muted);
+      }
+
+      /* --- Table --- */
+      .data-table {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        margin-bottom: 20px;
+        min-height: 250px;
+      }
+      .table-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid var(--border);
+        background: white;
+      }
+      .table-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+      .table-responsive {
+        overflow-x: auto;
+        width: 100%;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        white-space: nowrap;
+      }
+      th {
+        background: #f8fafc;
+        padding: 16px 20px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border);
+      }
+      td {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+        color: var(--text-main);
+        vertical-align: middle;
+      }
+
+      /* Badges & Actions */
+      .type-badge {
+        padding: 4px 10px;
+        background: #f1f5f9;
+        color: #334155;
+        font-weight: 600;
+        font-size: 12px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+      }
+      .status {
+        padding: 6px 12px;
+        border-radius: 30px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .status-impounded {
+        background: #fef9c3;
+        color: #854d0e;
+        border: 1px solid #fde047;
+      }
+      .status-paid {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #86efac;
+      }
+      .status-released {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+      }
+      .action-cell {
+        display: flex;
+        gap: 8px;
+      }
+      .action-icon-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s;
+        font-size: 14px;
+        color: var(--sidebar-bg);
+        background: #f1f5f9;
+        border: 1px solid transparent;
+      }
+      .action-icon-btn:hover {
+        background: var(--sidebar-bg);
+        color: white;
+      }
+
+      /* --- Pagination (EXACTLY like first code) --- */
+      .pagination {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        padding: 15px 25px;
+        border-top: 1px solid var(--border);
+        background: white;
+      }
+      .page-btn {
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--border);
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        transition: 0.2s;
+      }
+      .page-btn:hover:not(:disabled) {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-soft);
+      }
+      .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      #pageInfo {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin: 0 10px;
+      }
+
+      /* --- Modals --- */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(4px);
+      }
+      .modal-content {
+        background: white;
+        width: 95%;
+        max-width: 650px;
+        border-radius: 16px;
+        padding: 0;
+        box-shadow: var(--shadow-sm);
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      .modal-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .close {
+        background: #f1f5f9;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        font-size: 20px;
+        color: var(--text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .detail-section {
+        margin: 20px;
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+      }
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+      }
+      .detail-item {
+        display: flex;
+        flex-direction: column;
+      }
+      .detail-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 5px;
+        text-transform: uppercase;
+      }
+      .detail-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-main);
+      }
+
+      /* --- Mobile Nav --- */
+      .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: white;
+        display: none;
+        justify-content: space-around;
+        padding: 12px 0;
+        border-top: 1px solid var(--border);
+        z-index: 1500;
+      }
+      .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        color: var(--text-muted);
+        font-size: 11px;
+      }
+      .nav-item.active {
+        color: var(--primary);
+        font-weight: 600;
+      }
+
+      @media (max-width: 900px) {
+        .sidebar {
+          display: none;
+        }
+        .main-content {
+          margin-left: 0;
+          padding: 20px;
+          padding-bottom: 100px;
+        }
+        .bottom-nav {
+          display: flex;
+        }
+        .user-info {
+          display: none;
+        }
+        .toolbar-container {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .search-box {
+          width: 100%;
+        }
+        .search-input {
+          width: 100%;
+        }
+        .actions-right {
+          justify-content: space-between;
+        }
+        /* Mobile adjustment for modal to ensure it doesn't go off screen */
+        .filter-modal {
+          right: auto;
+          left: 0;
+          width: 100%;
+        }
+      }
+      .text p {
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="sidebar-content">
+        <div class="sidebar-header">
+          <div class="logo">
+            <svg viewBox="0 0 512 512" width="40" height="40" fill="white">
+              <path
+                d="M112,112c0-26.5,21.5-48,48-48h76.3c15.2-22,40.7-36.5,69.7-36.5s54.5,14.5,69.7,36.5H416c26.5,0,48,21.5,48,48v64H112V112z M306,83.5c-11.2,0-20.7,7.8-23.2,18.5h46.4C326.7,91.3,317.2,83.5,306,83.5z"
+              />
+              <path
+                d="M47.5,192C21.3,192,0,213.3,0,239.5v161C0,426.7,21.3,448,47.5,448h17.1c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h161.2c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h12.1c26.2,0,47.5-21.3,47.5-47.5v-161C560,213.3,538.7,192,512.5,192H47.5z M133,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S148.1,456.2,133,456.2z M431,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S446.1,456.2,431,456.2z"
+              />
+            </svg>
+          </div>
+          <div class="text">
+            <h2>VIMS</h2>
+            <p>Impound Management</p>
+          </div>
+        </div>
+        <div class="sidebar-menu">
+          <ul>
+            <li>
+              <a href="officer-dashboard.html"
+                ><i class="fas fa-chart-pie"></i>
+                <span class="menu-text">Dashboard</span></a
+              >
+            </li>
+            <li>
+              <a href="officer-add-vehicle.html"
+                ><i class="fas fa-plus-circle"></i>
+                <span class="menu-text">Add Vehicle</span></a
+              >
+            </li>
+            <li>
+              <a href="officer-my-vehicles.html" class="active"
+                ><i class="fas fa-layer-group"></i>
+                <span class="menu-text">Impounds</span></a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-logout">
+        <a href="#" onclick="logout()" class="logout-link">
+          <i class="fas fa-arrow-right-from-bracket"></i>
+          <span class="menu-text">Logout</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="top-bar">
+        <div class="page-title">
+          <h1>Impound Records</h1>
+          <p>Manage and track your impounded vehicles.</p>
+        </div>
+
+        <div class="user-menu" id="userMenuBtn">
+          <div class="user-info">
+            <div class="user-name">Loading...</div>
+            <div class="user-role">Officer</div>
+          </div>
+          <div class="user-avatar">?</div>
+        </div>
+
+        <div class="profile-dropdown" id="profileDropdown">
+          <div class="dropdown-header">
+            <div class="dropdown-avatar" id="dropdownAvatar">?</div>
+            <div class="dropdown-name" id="dropdownName">User Name</div>
+            <div class="dropdown-role" id="dropdownRole">Role</div>
+          </div>
+          <div class="dropdown-body">
+            <a class="dropdown-item"
+              ><i class="fas fa-cog" style="width: 25px"></i> Settings</a
+            >
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 5px 0" />
+            <a class="dropdown-item logout" onclick="logout()"
+              ><i class="fas fa-sign-out-alt" style="width: 25px"></i> Logout</a
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <i class="fas fa-car stat-icon"></i>
+          <div class="stat-value" id="totalImpounded">0</div>
+          <div class="stat-label">Total Impounded</div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-check-circle stat-icon"></i>
+          <div class="stat-value" id="totalPaid">0</div>
+          <div class="stat-label">Fines Paid</div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-door-open stat-icon"></i>
+          <div class="stat-value" id="totalReleased">0</div>
+          <div class="stat-label">Released</div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-coins stat-icon"></i>
+          <div class="stat-value" id="totalFine">₱0</div>
+          <div class="stat-label">Total Fine Value</div>
+        </div>
+      </div>
+
+      <div class="toolbar-container">
+        <div class="search-box">
+          <input
+            type="text"
+            class="search-input"
+            id="searchPlateInput"
+            placeholder="Search Plate Number..."
+            oninput="applyFilters()"
+          />
+          <button class="search-btn" onclick="applyFilters()">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+
+        <div class="actions-right">
+          <div class="filter-wrapper">
+            <button
+              class="btn btn-outline"
+              id="filterBtn"
+              onclick="toggleFilterModal()"
+            >
+              <i class="fas fa-filter"></i> Filter
+            </button>
+
+            <div class="filter-modal" id="filterModal">
+              <div class="filter-group">
+                <label class="filter-label">Vehicle Type</label>
+                <select id="filterTypeInput" class="filter-input">
+                  <option value="">All Types</option>
+                  <option value="Motorcycle">Motorcycle</option>
+                  <option value="Sedan">Sedan</option>
+                  <option value="SUV">SUV</option>
+                  <option value="Van">Van</option>
+                  <option value="Truck">Truck</option>
+                  <option value="Tricycle">Tricycle</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label class="filter-label">Date Impounded</label>
+                <input type="date" id="filterDateInput" class="filter-input" />
+              </div>
+              <div class="filter-actions">
+                <button class="btn btn-full btn-ghost" onclick="resetFilters()">
+                  Reset
+                </button>
+                <button
+                  class="btn btn-full btn-primary"
+                  onclick="applyFilters()"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button
+            class="btn-refresh"
+            id="refreshBtn"
+            onclick="refreshData()"
+            title="Refresh Data"
+          >
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="data-table">
+        <div class="table-header">
+          <div class="table-title">Impounded Vehicles</div>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Ref No.</th>
+                <th>Plate Number</th>
+                <th>Vehicle Type</th>
+                <th>Fine Amount</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="vehiclesTableBody">
+              <tr>
+                <td
+                  colspan="7"
+                  style="
+                    text-align: center;
+                    padding: 40px;
+                    color: var(--text-muted);
+                  "
+                >
+                  <i class="fas fa-circle-notch fa-spin"></i> Loading data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination" id="pagination" style="display: none">
+          <button class="page-btn" id="prevPage">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span id="pageInfo">Page 1 of 1</span>
+          <button class="page-btn" id="nextPage">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="bottom-nav">
+      <a href="officer-dashboard.html" class="nav-item">
+        <i class="fas fa-chart-pie"></i><span>Dashboard</span>
+      </a>
+      <a href="officer-add-vehicle.html" class="nav-item">
+        <i class="fas fa-plus-circle"></i><span>Add</span>
+      </a>
+      <a href="officer-my-vehicles.html" class="nav-item active">
+        <i class="fas fa-layer-group"></i><span>Impounds</span>
+      </a>
+      <a href="#" class="nav-item" id="mobileProfileBtn">
+        <i class="fas fa-user"></i><span>Profile</span>
+      </a>
+    </nav>
+
+    <div id="viewModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Vehicle Details</h2>
+          <button class="close" id="closeViewModal">&times;</button>
+        </div>
+        <div class="modal-body" id="viewModalBody"></div>
+      </div>
+    </div>
+
+    <div id="qrModal" class="modal">
+      <div
+        class="modal-content"
+        style="max-width: 400px; text-align: center; padding: 20px"
+      >
+        <div class="modal-header">
+          <h2>Generate QR</h2>
+          <button class="close" id="closeQrModal">&times;</button>
+        </div>
+        <div style="padding: 20px">
+          <div
+            style="
+              background: white;
+              padding: 15px;
+              border: 1px solid #eee;
+              border-radius: 8px;
+              display: inline-block;
+              margin-bottom: 20px;
+            "
+          >
+            <canvas id="qrcodeCanvas"></canvas>
+          </div>
+          <h4
+            id="modalPlateNumber"
+            style="font-size: 18px; color: var(--text-main)"
+          ></h4>
+          <p
+            id="modalOwnerName"
+            style="
+              color: var(--text-muted);
+              font-size: 14px;
+              margin-bottom: 20px;
+            "
+          ></p>
+          <button
+            class="btn btn-primary"
+            onclick="printQrSticker()"
+            style="width: 100%; justify-content: center"
+          >
+            <i class="fas fa-print"></i> Print Sticker
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        getDocs,
+        doc,
+        getDoc,
+        query,
+        where,
+      } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+      import {
+        getAuth,
+        signOut,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyByzd88bcUAq0VdP0w6oB8W_b2AUgoIzXc",
+        authDomain: "vehicle-impound.firebaseapp.com",
+        projectId: "vehicle-impound",
+        storageBucket: "vehicle-impound.appspot.com",
+        messagingSenderId: "69239563292",
+        appId: "1:69239563292:web:281912e8a38301c0feabd9",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+
+      // Global variables
+      let allVehiclesCache = [];
+      let filteredVehicles = [];
+      let currentUser = null;
+      let currentPage = 1;
+      const itemsPerPage = 8;
+      let currentQrVehicle = null;
+
+      // --- ADDED HELPERS ---
+      // Helper to parse Firestore Timestamp to JavaScript Date
+      function parseTimestampToDate(dateInput) {
+        if (!dateInput) return null;
+
+        // If it's a Firestore Timestamp (has toDate method)
+        if (typeof dateInput.toDate === "function") {
+          return dateInput.toDate();
+        }
+
+        // If it's already a Date object
+        if (dateInput instanceof Date) {
+          return dateInput;
+        }
+
+        // If it's a string or number, parse it
+        const parsed = new Date(dateInput);
+        return isNaN(parsed.getTime()) ? null : parsed;
+      }
+
+      // Format date for display
+      function formatDate(dateInput) {
+        const date = parseTimestampToDate(dateInput);
+        return date ? date.toLocaleDateString() : "N/A";
+      }
+
+      // --- DOM Elements ---
+      const vehiclesTableBody = document.getElementById("vehiclesTableBody");
+      const pagination = document.getElementById("pagination");
+      const prevPageBtn = document.getElementById("prevPage");
+      const nextPageBtn = document.getElementById("nextPage");
+      const pageInfo = document.getElementById("pageInfo");
+
+      // --- Auth & Data Logic ---
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          await loadUserData(user);
+        } else {
+          window.location.href = "../index.html";
+        }
+      });
+
+      async function loadUserData(firebaseUser) {
+        try {
+          const q = query(
+            collection(db, "users"),
+            where("email", "==", firebaseUser.email)
+          );
+          const snapshot = await getDocs(q);
+          if (!snapshot.empty) {
+            const data = snapshot.docs[0].data();
+
+            // Map specific fields including camelCase fullName
+            currentUser = {
+              uid: firebaseUser.uid,
+              readableId: data.readableId,
+              fullName: data.fullName, // Specifically requested field
+              role: data.role,
+              email: data.email,
+            };
+
+            updateUserProfileUI();
+            await loadVehicles();
+          } else {
+            useFallbackUser();
+            await loadVehicles();
+          }
+        } catch (e) {
+          console.error(e);
+          useFallbackUser();
+          await loadVehicles();
+        }
+      }
+
+      function useFallbackUser() {
+        currentUser = {
+          readableId: "U-001",
+          fullName: "Officer Mendoza",
+          role: "Officer",
+        };
+        updateUserProfileUI();
+      }
+
+      function updateUserProfileUI() {
+        // Use fullName specifically
+        const name = currentUser.fullName || "Officer";
+        const role = currentUser.role || "Officer";
+        const initials = name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .substring(0, 2)
+          .toUpperCase();
+
+        // Update Top Bar
+        document.querySelector(".user-name").textContent = name;
+        document.querySelector(".user-role").textContent = role.toUpperCase();
+        document.querySelector(".user-avatar").textContent = initials;
+
+        // Update Dropdown Header
+        document.getElementById("dropdownName").textContent = name;
+        document.getElementById("dropdownRole").textContent =
+          role.toUpperCase();
+        document.getElementById("dropdownAvatar").textContent = initials;
+      }
+
+      window.logout = async function () {
+        await signOut(auth);
+        window.location.href = "../index.html";
+      };
+
+      async function loadVehicles() {
+        if (!currentUser) return;
+        try {
+          // Changed query to fetch ALL vehicles (removed where clause)
+          const q = query(collection(db, "impoundedVehicles"));
+          const snapshot = await getDocs(q);
+
+          allVehiclesCache = []; // Clear cache
+          snapshot.forEach((doc) =>
+            allVehiclesCache.push({ id: doc.id, ...doc.data() })
+          );
+
+          // Initial Apply (Filter, Sort, Paginate)
+          applyFilters();
+        } catch (error) {
+          console.error(error);
+          vehiclesTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:red">Error loading data</td></tr>`;
+        }
+      }
+
+      // --- CLIENT-SIDE LOGIC ---
+
+      // Updated applyFilters using the new helper
+      window.applyFilters = function () {
+        const searchPlate = document
+          .getElementById("searchPlateInput")
+          .value.toLowerCase()
+          .trim();
+        const filterType = document.getElementById("filterTypeInput").value;
+        const filterDate = document.getElementById("filterDateInput").value;
+
+        filteredVehicles = allVehiclesCache.filter((vehicle) => {
+          const plate = (vehicle.plateNumber || "").toLowerCase();
+          const type = vehicle.vehicleType || "";
+
+          // Parse the impoundDate properly for filtering
+          let dateMatch = true;
+          if (filterDate) {
+            const vehicleDate = parseTimestampToDate(vehicle.impoundDate);
+            if (vehicleDate) {
+              const filterDateObj = new Date(filterDate);
+              dateMatch =
+                vehicleDate.toDateString() === filterDateObj.toDateString();
+            } else {
+              dateMatch = false;
+            }
+          }
+
+          const matchPlate = searchPlate === "" || plate.includes(searchPlate);
+          const matchType = filterType === "" || type === filterType;
+
+          return matchPlate && matchType && dateMatch;
+        });
+
+        // Sort by Timestamp (newest first)
+        filteredVehicles.sort((a, b) => {
+          const dateA = parseTimestampToDate(a.impoundDate) || new Date(0);
+          const dateB = parseTimestampToDate(b.impoundDate) || new Date(0);
+          return dateB - dateA;
+        });
+
+        currentPage = 1;
+        renderTable();
+        updateStats(filteredVehicles);
+
+        const modal = document.getElementById("filterModal");
+        const btn = document.getElementById("filterBtn");
+        modal.classList.remove("show");
+        btn.classList.remove("active");
+      };
+
+      window.resetFilters = function () {
+        document.getElementById("searchPlateInput").value = "";
+        document.getElementById("filterTypeInput").value = "";
+        document.getElementById("filterDateInput").value = "";
+        applyFilters();
+      };
+
+      window.refreshData = async function () {
+        const icon = document.querySelector("#refreshBtn i");
+        icon.classList.add("spinning");
+        await loadVehicles();
+        setTimeout(() => icon.classList.remove("spinning"), 500);
+      };
+
+      function renderTable() {
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = filteredVehicles.slice(start, end);
+
+        if (pageData.length === 0) {
+          vehiclesTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:50px; color:#64748b;">No vehicles found.</td></tr>`;
+          pagination.style.display = "none";
+          return;
+        }
+
+        // UPDATED: Display the actual referenceNumber field from database
+        vehiclesTableBody.innerHTML = pageData
+          .map(
+            (v) => `
+            <tr>
+                <td style="font-family:monospace; color:var(--primary); font-weight:600">${
+                  v.referenceNumber || "N/A"
+                }</td>
+                <td style="font-weight:700">${v.plateNumber || "N/A"}</td>
+                <td><span class="type-badge">${
+                  v.vehicleType || "N/A"
+                }</span></td>
+                <td>₱${(v.fineAmount || 0).toLocaleString()}</td>
+                <td>${formatDate(v.impoundDate)}</td>
+                <td><span class="status status-${(
+                  v.status || "impounded"
+                ).toLowerCase()}">${v.status || "Impounded"}</span></td>
+                <td class="action-cell">
+                    <button class="action-icon-btn" onclick="viewVehicle('${
+                      v.id
+                    }')" title="View"><i class="fas fa-eye"></i></button>
+                    <button class="action-icon-btn" onclick="editVehicle('${
+                      v.id
+                    }')" title="Edit"><i class="fas fa-pen"></i></button>
+                    <button class="action-icon-btn" onclick="showQrCode('${
+                      v.id
+                    }')" title="QR"><i class="fas fa-qrcode"></i></button>
+                </td>
+            </tr>
+        `
+          )
+          .join("");
+
+        updatePagination();
+      }
+
+      function updatePagination() {
+        const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
+
+        if (totalPages > 1) {
+          pagination.style.display = "flex";
+          pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+          prevPageBtn.disabled = currentPage === 1;
+          nextPageBtn.disabled = currentPage === totalPages;
+        } else {
+          pagination.style.display = "none";
+        }
+      }
+
+      prevPageBtn.addEventListener("click", () => changePage(-1));
+      nextPageBtn.addEventListener("click", () => changePage(1));
+
+      function changePage(dir) {
+        const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
+        currentPage += dir;
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        renderTable();
+      }
+
+      function updateStats(vehicles) {
+        const total = vehicles.length;
+        const paid = vehicles.filter((v) => v.status === "paid").length;
+        const released = vehicles.filter((v) => v.status === "released").length;
+        const fine = vehicles.reduce((sum, v) => sum + (v.fineAmount || 0), 0);
+
+        document.getElementById("totalImpounded").innerText = total;
+        document.getElementById("totalPaid").innerText = paid;
+        document.getElementById("totalReleased").innerText = released;
+        document.getElementById(
+          "totalFine"
+        ).innerText = `₱${fine.toLocaleString()}`;
+      }
+
+      // --- Filter Modal Toggle ---
+      window.toggleFilterModal = function () {
+        const modal = document.getElementById("filterModal");
+        const btn = document.getElementById("filterBtn");
+        if (modal.classList.contains("show")) {
+          modal.classList.remove("show");
+          btn.classList.remove("active");
+        } else {
+          modal.classList.add("show");
+          btn.classList.add("active");
+        }
+      };
+
+      // --- Modal Functions (View, QR) ---
+      const viewModal = document.getElementById("viewModal");
+      const qrModal = document.getElementById("qrModal");
+
+      window.viewVehicle = async function (id) {
+        viewModal.style.display = "flex";
+        setTimeout(() => viewModal.classList.add("show"), 10);
+        document.getElementById(
+          "viewModalBody"
+        ).innerHTML = `<div style="text-align:center; padding:30px"><i class="fas fa-circle-notch fa-spin"></i> Loading...</div>`;
+
+        const docSnap = await getDoc(doc(db, "impoundedVehicles", id));
+        if (docSnap.exists()) {
+          const v = docSnap.data();
+          document.getElementById("viewModalBody").innerHTML = `
+                <div class="detail-section">
+                    <h3 style="margin-bottom:15px; color:var(--primary); font-size:14px; text-transform:uppercase;"><i class="fas fa-user"></i> Owner</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item"><span class="detail-label">Name</span><span class="detail-value">${
+                          v.ownerName
+                        }</span></div>
+                        <div class="detail-item"><span class="detail-label">Contact</span><span class="detail-value">${
+                          v.ownerContact
+                        }</span></div>
+                        <div class="detail-item" style="grid-column:1/-1"><span class="detail-label">Address</span><span class="detail-value">${
+                          v.ownerAddress
+                        }</span></div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h3 style="margin-bottom:15px; color:var(--primary); font-size:14px; text-transform:uppercase;"><i class="fas fa-car"></i> Vehicle</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item"><span class="detail-label">Plate</span><span class="detail-value">${
+                          v.plateNumber
+                        }</span></div>
+                        <div class="detail-item"><span class="detail-label">Type</span><span class="detail-value">${
+                          v.vehicleType
+                        }</span></div>
+                        <div class="detail-item"><span class="detail-label">Model</span><span class="detail-value">${
+                          v.vehicleModel
+                        }</span></div>
+                        <div class="detail-item"><span class="detail-label">Color</span><span class="detail-value">${
+                          v.vehicleColor
+                        }</span></div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                      <h3 style="margin-bottom:15px; color:var(--primary); font-size:14px; text-transform:uppercase;"><i class="fas fa-info-circle"></i> Violation</h3>
+                      <p style="font-size:14px; margin-bottom:10px;">${
+                        v.violationDescription
+                      }</p>
+                      <div style="background:#fee2e2; color:#b91c1c; padding:15px; text-align:center; border-radius:8px; font-weight:bold; font-size:18px;">
+                        Fine: ₱${(v.fineAmount || 0).toLocaleString()}
+                      </div>
+                </div>
+            `;
+        }
+      };
+
+      window.showQrCode = async function (id) {
+        qrModal.style.display = "flex";
+        setTimeout(() => qrModal.classList.add("show"), 10);
+
+        const docSnap = await getDoc(doc(db, "impoundedVehicles", id));
+        if (docSnap.exists()) {
+          const v = docSnap.data();
+          currentQrVehicle = v;
+          document.getElementById("modalPlateNumber").innerText = v.plateNumber;
+          document.getElementById("modalOwnerName").innerText = v.ownerName;
+
+          const qrData = `${window.location.origin}/impoundofficer/scanner.html?id=${id}`;
+          QRCode.toCanvas(document.getElementById("qrcodeCanvas"), qrData, {
+            width: 180,
+            margin: 1,
+          });
+        }
+      };
+
+      window.printQrSticker = function () {
+        const canvas = document.getElementById("qrcodeCanvas");
+        const win = window.open("", "", "width=400,height=500");
+        // UPDATED: Used formatDate() here too for the sticker
+        win.document.write(`
+            <html><body style="text-align:center; font-family:sans-serif; margin-top:50px;">
+            <div style="border:2px solid #000; padding:20px; display:inline-block;">
+                <h2>VIMS TAG</h2>
+                <img src="${canvas.toDataURL()}" width="150" style="display:block; margin:0 auto;"/>
+                <h1>${currentQrVehicle.plateNumber}</h1>
+                <p>${formatDate(currentQrVehicle.impoundDate)}</p>
+            </div>
+            <script>window.print();window.close();<\/script>
+            </body></html>
+        `);
+      };
+
+      window.editVehicle = function (id) {
+        alert("Edit feature coming soon for ID: " + id);
+      };
+
+      // Close Modals
+      const hideModal = (m) => {
+        m.classList.remove("show");
+        setTimeout(() => (m.style.display = "none"), 300);
+      };
+      document.getElementById("closeViewModal").onclick = () =>
+        hideModal(viewModal);
+      document.getElementById("closeQrModal").onclick = () =>
+        hideModal(qrModal);
+      window.onclick = (e) => {
+        if (e.target == viewModal) hideModal(viewModal);
+        if (e.target == qrModal) hideModal(qrModal);
+        if (
+          !e.target.closest(".filter-wrapper") &&
+          !e.target.closest("#filterBtn")
+        ) {
+          document.getElementById("filterModal").classList.remove("show");
+          document.getElementById("filterBtn").classList.remove("active");
+        }
+      };
+
+      // Profile Dropdown Logic
+      const userMenuBtn = document.getElementById("userMenuBtn");
+      const profileDropdown = document.getElementById("profileDropdown");
+      const mobileProfileBtn = document.getElementById("mobileProfileBtn");
+
+      function toggleProfile(e) {
+        if (e) e.preventDefault();
+        e.stopPropagation();
+        profileDropdown.classList.toggle("active");
+        userMenuBtn.classList.toggle("active");
+      }
+
+      userMenuBtn.addEventListener("click", toggleProfile);
+      mobileProfileBtn.addEventListener("click", toggleProfile);
+      document.addEventListener("click", (e) => {
+        if (
+          !profileDropdown.contains(e.target) &&
+          !userMenuBtn.contains(e.target) &&
+          !mobileProfileBtn.contains(e.target)
+        ) {
+          profileDropdown.classList.remove("active");
+          userMenuBtn.classList.remove("active");
+        }
+      });
+    </script>
+  </body>
+</html>

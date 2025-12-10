@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - VIMS</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        /* VIMS Modern Palette - Dark Mode */
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --primary-glow: rgba(37, 99, 235, 0.5);
+
+        /* Dark Theme Base Colors (Same Palette) */
+        --bg-body: #0f172a; /* Dark Slate */
+        --text-main: #f1f5f9; /* Very light gray/white */
+        --text-muted: #94a3b8; /* Muted blue-gray */
+
+        /* Modified for a lighter "frosted" feel while keeping dark theme */
+        --glass-bg: rgba(
+          255,
+          255,
+          255,
+          0.1
+        ); /* Lighter tint for brighter glass */
+        --glass-border: rgba(255, 255, 255, 0.2); /* More defined border */
+        --input-bg: rgba(255, 255, 255, 0.05); /* Lighter input background */
+
+        --success: #10b981;
+        --danger: #ef4444;
+        --radius: 12px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+      }
+
+      body {
+        background-color: var(--bg-body);
+        /* Radial gradient centered to create a subtle light source */
+        background-image: radial-gradient(
+          circle at center,
+          #1e293b 0%,
+          #0f172a 100%
+        );
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+        color: var(--text-main);
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes popIn {
+        0% {
+          transform: scale(0.9);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .login-card {
+        width: 100%;
+        /* INCREASED WIDTH FROM 400px TO 480px */
+        max-width: 480px;
+        border-radius: 24px;
+        /* Lighter Glassmorphism Effect */
+        background: var(--glass-bg);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid var(--glass-border);
+        /* Added inner glow for a brighter edge */
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+        animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        /* INCREASED PADDING FOR WIDER CARD */
+        padding: 50px 45px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .logo svg {
+        width: 85px; /* Slightly larger logo */
+        height: 85px;
+        filter: drop-shadow(0 0 20px rgba(37, 99, 235, 0.5));
+        margin-bottom: 25px;
+      }
+
+      .header h1 {
+        font-size: 28px; /* Larger heading */
+        font-weight: 800;
+        color: white;
+        letter-spacing: 0.5px;
+        margin-bottom: 10px;
+      }
+
+      .header p {
+        font-size: 15px; /* Slightly larger subtitle */
+        color: var(--text-muted);
+        font-weight: 500;
+        letter-spacing: 1px;
+      }
+
+      .form-group {
+        margin-bottom: 28px; /* Increased spacing */
+      }
+
+      .form-group label {
+        display: block;
+        font-size: 13px; /* Slightly larger labels */
+        font-weight: 700;
+        color: var(--text-main); /* Brighter label color */
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .input-wrapper {
+        position: relative;
+      }
+
+      .input-wrapper i {
+        position: absolute;
+        left: 18px; /* Adjusted for wider inputs */
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 20px; /* Slightly larger icons */
+        transition: 0.3s;
+      }
+
+      input[type="email"],
+      input[type="password"] {
+        width: 100%;
+        padding: 18px 18px 18px 55px; /* Increased padding */
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
+        font-size: 16px; /* Larger font size */
+        color: white;
+        outline: none;
+        transition: 0.3s;
+        background: var(--input-bg);
+      }
+
+      input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 15px; /* Slightly larger placeholder */
+      }
+
+      input:focus {
+        border-color: var(--primary);
+        background: rgba(255, 255, 255, 0.1); /* Brighter focus state */
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+      }
+
+      input:focus + i {
+        color: var(--primary);
+      }
+
+      .options {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 40px; /* Increased spacing */
+        font-size: 15px; /* Slightly larger text */
+      }
+
+      .remember-me {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--text-main);
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .remember-me:hover {
+        color: white;
+      }
+
+      .remember-me input {
+        accent-color: var(--primary);
+        width: 20px; /* Slightly larger checkbox */
+        height: 20px;
+        cursor: pointer;
+      }
+
+      .forgot-password {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14px;
+      }
+
+      .forgot-password:hover {
+        color: #60a5fa;
+        text-decoration: underline;
+      }
+
+      .btn-login {
+        width: 100%;
+        padding: 20px; /* Increased padding */
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        color: white;
+        border: none;
+        border-radius: 14px;
+        font-weight: 700;
+        font-size: 17px; /* Larger font */
+        cursor: pointer;
+        transition: 0.3s;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 10px 25px -5px var(--primary-glow);
+        letter-spacing: 0.5px;
+      }
+
+      .btn-login:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 20px 35px -10px var(--primary-glow);
+      }
+
+      .btn-login:active {
+        transform: translateY(0);
+      }
+
+      .btn-login:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 40px; /* Increased spacing */
+        padding-top: 30px;
+        border-top: 1px solid var(--glass-border);
+        font-size: 13px; /* Slightly larger footer text */
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      /* --- MODAL STYLES (Dark Theme) --- */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(8px);
+      }
+
+      .modal-content {
+        background: #1e293b;
+        width: 90%;
+        max-width: 400px; /* Slightly wider modal */
+        border-radius: 20px;
+        padding: 40px;
+        text-align: center;
+        animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--glass-border);
+        color: white;
+      }
+
+      .modal-icon {
+        width: 80px; /* Larger modal icon */
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 25px auto;
+        font-size: 36px;
+      }
+
+      .modal-title {
+        font-size: 22px; /* Larger modal title */
+        font-weight: 800;
+        color: white;
+        margin-bottom: 12px;
+      }
+
+      .modal-message {
+        font-size: 16px; /* Larger modal message */
+        color: var(--text-muted);
+        margin-bottom: 30px;
+        line-height: 1.6;
+      }
+
+      .btn-modal {
+        width: 100%;
+        padding: 16px; /* Larger modal button */
+        border-radius: 12px;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 15px;
+        transition: 0.2s;
+      }
+
+      /* Modal Variations */
+      .modal-success .modal-icon {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--success);
+      }
+      .modal-success .btn-modal {
+        background: var(--success);
+        color: white;
+      }
+      .modal-success .btn-modal:hover {
+        background: #059669;
+      }
+
+      .modal-error .modal-icon {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--danger);
+      }
+      .modal-error .btn-modal {
+        background: var(--danger);
+        color: white;
+      }
+      .modal-error .btn-modal:hover {
+        background: #dc2626;
+      }
+
+      .fa-spinner {
+        animation: spin 1s linear infinite;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-card">
+      <div class="header">
+        <div class="logo">
+          <svg viewBox="0 0 512 512" fill="#2563eb">
+            <path
+              d="M112,112c0-26.5,21.5-48,48-48h76.3c15.2-22,40.7-36.5,69.7-36.5s54.5,14.5,69.7,36.5H416c26.5,0,48,21.5,48,48v64H112V112z M306,83.5c-11.2,0-20.7,7.8-23.2,18.5h46.4C326.7,91.3,317.2,83.5,306,83.5z"
+            />
+            <path
+              d="M47.5,192C21.3,192,0,213.3,0,239.5v161C0,426.7,21.3,448,47.5,448h17.1c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h161.2c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h12.1c26.2,0,47.5-21.3,47.5-47.5v-161C560,213.3,538.7,192,512.5,192H47.5z M133,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S148.1,456.2,133,456.2z M431,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S446.1,456.2,431,456.2z"
+            />
+          </svg>
+        </div>
+        <h1>VIMS</h1>
+        <p>Vehicle Impoundment Management System</p>
+      </div>
+
+      <form class="login-form" id="loginForm">
+        <div class="form-group">
+          <label for="username">Email Address</label>
+          <div class="input-wrapper">
+            <input
+              type="email"
+              id="username"
+              placeholder="user@lto.gov.ph"
+              required
+            />
+            <i class="fas fa-envelope"></i>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <input
+              type="password"
+              id="password"
+              placeholder="Enter your password"
+              required
+            />
+            <i class="fas fa-lock"></i>
+          </div>
+        </div>
+
+        <div class="options">
+          <label class="remember-me">
+            <input type="checkbox" id="remember" /> Remember me
+          </label>
+          <a href="#" class="forgot-password">Forgot Password?</a>
+        </div>
+
+        <button type="submit" class="btn-login" id="loginBtn">
+          <span>SIGN IN</span>
+          <i class="fas fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <div class="footer">
+        &copy; 2025 Land Transportation Office. All rights reserved.
+      </div>
+    </div>
+
+    <div id="notificationModal" class="modal">
+      <div class="modal-content" id="modalContent">
+        <div class="modal-icon" id="modalIcon"></div>
+        <h3 class="modal-title" id="modalTitle"></h3>
+        <p class="modal-message" id="modalMessage"></p>
+        <button class="btn-modal" id="modalBtn">OK</button>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+      import {
+        getAuth,
+        signInWithEmailAndPassword,
+      } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+      } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyByzd88bcUAq0VdP0w6oB8W_b2AUgoIzXc",
+        authDomain: "vehicle-impound.firebaseapp.com",
+        projectId: "vehicle-impound",
+        storageBucket: "vehicle-impound.firebasestorage.app",
+        messagingSenderId: "69239563292",
+        appId: "1:69239563292:web:281912e8a38301c0feabd9",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      // -- Modal Logic --
+      const modal = document.getElementById("notificationModal");
+      const modalContent = document.getElementById("modalContent");
+      const modalIcon = document.getElementById("modalIcon");
+      const modalTitle = document.getElementById("modalTitle");
+      const modalMessage = document.getElementById("modalMessage");
+      const modalBtn = document.getElementById("modalBtn");
+      let redirectUrl = null;
+
+      function showModal(type, title, message, url = null) {
+        // Reset Classes
+        modalContent.className = "modal-content";
+        modalContent.classList.add(
+          type === "success" ? "modal-success" : "modal-error"
+        );
+
+        // Set Icon
+        modalIcon.innerHTML =
+          type === "success"
+            ? '<i class="fas fa-check"></i>'
+            : '<i class="fas fa-exclamation"></i>';
+
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        redirectUrl = url;
+
+        modal.style.display = "flex";
+      }
+
+      modalBtn.addEventListener("click", () => {
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+        } else {
+          modal.style.display = "none";
+        }
+      });
+
+      // -- Login Logic --
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const email = document.getElementById("username").value.trim();
+          const password = document.getElementById("password").value.trim();
+          const btn = document.getElementById("loginBtn");
+
+          // UI Loading State
+          const originalBtnContent = btn.innerHTML;
+          btn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Processing...';
+          btn.disabled = true;
+
+          try {
+            const userCredential = await signInWithEmailAndPassword(
+              auth,
+              email,
+              password
+            );
+            const user = userCredential.user;
+
+            // Fetch Role & Redirect
+            const ref = doc(db, "users", user.uid);
+            const snap = await getDoc(ref);
+
+            if (!snap.exists()) {
+              showModal(
+                "error",
+                "Access Denied",
+                "No user role found in the database. Please contact admin."
+              );
+              return;
+            }
+
+            const data = snap.data();
+            const redirectPath = data.redirect || "index.html";
+
+            showModal(
+              "success",
+              "Welcome Back!",
+              `Logging in as ${data.role || "User"}...`,
+              redirectPath
+            );
+          } catch (error) {
+            console.error("Login error:", error);
+            let msg = "Invalid email or password.";
+            if (error.code === "auth/too-many-requests")
+              msg = "Too many attempts. Try again later.";
+            if (error.code === "auth/user-not-found")
+              msg = "User does not exist.";
+            if (error.code === "auth/wrong-password")
+              msg = "Incorrect password.";
+
+            showModal("error", "Login Failed", msg);
+          } finally {
+            // Reset Button
+            btn.innerHTML = originalBtnContent;
+            btn.disabled = false;
+          }
+        });
+    </script>
+  </body>
+</html>

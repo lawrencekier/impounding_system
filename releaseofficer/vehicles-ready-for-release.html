@@ -1,0 +1,1851 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vehicles Ready for Release - VIMS</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        /* VIMS Modern Palette */
+        --primary: #2563eb;
+        --primary-soft: #dbeafe;
+        --primary-dark: #1e40af;
+        --sidebar-bg: #0f172a;
+        --bg-body: #f1f5f9;
+        --bg-card: #ffffff;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --radius: 12px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+      }
+      body {
+        background-color: var(--bg-body);
+        display: flex;
+        min-height: 100vh;
+        color: var(--text-main);
+        overflow-x: hidden;
+      }
+
+      /* Animation */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes popIn {
+        0% {
+          transform: scale(0.9);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 260px;
+        background: var(--sidebar-bg);
+        color: white;
+        height: 100vh;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        transition: 0.3s;
+      }
+      .sidebar-header {
+        padding: 30px 24px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        flex-shrink: 0;
+      }
+      .logo svg {
+        width: 40px;
+        height: 40px;
+      }
+      .sidebar-header h2 {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+      .sidebar-menu {
+        padding: 20px 15px;
+        flex: 1;
+        overflow-y: auto;
+      }
+      .sidebar-menu ul {
+        list-style: none;
+      }
+      .sidebar-menu li {
+        margin-bottom: 5px;
+      }
+      .sidebar-menu a {
+        display: flex;
+        align-items: center;
+        padding: 14px 20px;
+        color: #94a3b8;
+        text-decoration: none;
+        transition: 0.2s;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 14px;
+      }
+      .sidebar-menu a:hover,
+      .sidebar-menu a.active {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+      }
+      .sidebar-menu a.active {
+        background: var(--primary);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      }
+      .sidebar-menu i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+      }
+      /* FIXED: Logout at very bottom */
+      .sidebar-logout {
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.2);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        /* No margin-top needed because sidebar-content is flex column */
+      }
+      .sidebar-logout ul {
+        list-style: none;
+      }
+      .sidebar-logout a {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        color: #fca5a5;
+        text-decoration: none;
+        transition: 0.3s;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+      .sidebar-logout a:hover {
+        background-color: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+      }
+      .sidebar-logout i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+      }
+
+      /* Main Content */
+      .main-content {
+        flex: 1;
+        margin-left: 260px;
+        padding: 30px 40px;
+      }
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+      }
+      .page-title h1 {
+        font-size: 26px;
+        color: var(--text-main);
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 5px;
+      }
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      /* User Menu */
+      .user-menu {
+        display: flex;
+        align-items: center;
+        position: relative;
+        padding: 6px 8px 6px 16px;
+        border-radius: 50px;
+        background: white;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+      }
+      .user-menu:hover {
+        border-color: var(--primary);
+      }
+      .user-info {
+        text-align: right;
+        margin-right: 12px;
+      }
+      .user-name {
+        font-weight: 700;
+        color: var(--text-main);
+        font-size: 14px;
+      }
+      .user-role {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .user-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+      }
+
+      /* --- NEW PROFILE DROPDOWN CSS --- */
+      .profile-dropdown {
+        position: absolute;
+        top: 60px;
+        right: 0;
+        width: 250px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        border: 1px solid var(--border);
+        display: none;
+        z-index: 2000;
+        overflow: hidden;
+      }
+      .profile-dropdown.active {
+        display: block;
+        animation: fadeIn 0.2s ease-out;
+      }
+      .dropdown-header {
+        padding: 20px;
+        background: #f8fafc;
+        border-bottom: 1px solid var(--border);
+        text-align: center;
+      }
+      .dropdown-avatar {
+        width: 60px;
+        height: 60px;
+        background: var(--primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 700;
+        margin: 0 auto 10px;
+        border: 3px solid white;
+        box-shadow: var(--shadow-sm);
+      }
+      .dropdown-name {
+        font-weight: 700;
+        color: var(--text-main);
+        font-size: 15px;
+      }
+      .dropdown-role {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-top: 2px;
+      }
+      .dropdown-body {
+        padding: 8px;
+      }
+      .dropdown-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        color: var(--text-main);
+        text-decoration: none;
+        font-size: 14px;
+        border-radius: 8px;
+        transition: 0.2s;
+        cursor: pointer;
+        gap: 10px;
+      }
+      .dropdown-item:hover {
+        background: #f1f5f9;
+        color: var(--primary);
+      }
+      .dropdown-item.logout {
+        color: var(--danger);
+      }
+      .dropdown-item.logout:hover {
+        background: #fef2f2;
+      }
+
+      /* Tabs */
+      .nav-tabs-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 25px;
+      }
+      .nav-tabs {
+        display: flex;
+        background: #e2e8f0;
+        padding: 4px;
+        border-radius: 12px;
+        gap: 5px;
+      }
+      .tab-item {
+        padding: 10px 35px;
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-radius: 10px;
+        transition: 0.3s;
+        position: relative;
+      }
+      .tab-item:hover {
+        color: var(--text-main);
+      }
+      .tab-item.active {
+        background: white;
+        color: var(--primary);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Data Table */
+      .data-table {
+        background: var(--bg-card);
+        border-radius: 16px;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      .table-header {
+        padding: 20px 25px;
+        background: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+      }
+      .header-left {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex: 1;
+      }
+
+      .search-container {
+        display: flex;
+        align-items: center;
+        position: relative;
+        width: 100%;
+        max-width: 350px;
+      }
+      .search-container input {
+        width: 100%;
+        padding: 12px 15px 12px 45px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 14px;
+        background: #f8fafc;
+        outline: none;
+        transition: 0.2s;
+      }
+      .search-container input:focus {
+        border-color: var(--primary);
+        background: white;
+        box-shadow: 0 0 0 3px var(--primary-soft);
+      }
+      .search-container i {
+        position: absolute;
+        left: 15px;
+        color: var(--text-muted);
+        font-size: 16px;
+      }
+
+      .btn-icon-only {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: white;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .btn-icon-only:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-soft);
+      }
+      .btn-icon-only i.spinning {
+        animation: spin 0.8s linear infinite;
+      }
+
+      /* Table Styling */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+      th {
+        background: #f8fafc;
+        padding: 18px 24px;
+        text-align: left;
+        font-weight: 700;
+        color: #64748b;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--border);
+      }
+      td {
+        padding: 18px 24px;
+        border-bottom: 1px solid #f1f5f9;
+        color: var(--text-main);
+        font-size: 14px;
+        vertical-align: middle;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: background 0.2s;
+      }
+      tr {
+        animation: fadeIn 0.3s ease-out;
+        border-left: 3px solid transparent;
+        transition: 0.2s;
+      }
+      tr:hover {
+        border-left-color: var(--primary);
+      }
+      tr:hover td {
+        background-color: #f8fafc;
+      }
+
+      /* Columns */
+      th:nth-child(1) {
+        width: 14%;
+      } /* Ref */
+      th:nth-child(2) {
+        width: 14%;
+      } /* Plate */
+      th:nth-child(3) {
+        width: 12%;
+      } /* Type */
+      th:nth-child(4) {
+        width: 22%;
+      } /* Owner */
+      th:nth-child(5) {
+        width: 14%;
+      } /* Date */
+      th:nth-child(6) {
+        width: 12%;
+        text-align: center;
+      } /* Status */
+      th:nth-child(7) {
+        width: 12%;
+        text-align: center;
+      } /* Actions */
+      td:nth-child(6),
+      td:nth-child(7) {
+        text-align: center;
+      }
+
+      /* Cell Styles */
+      .ref-cell {
+        font-family: monospace;
+        background: #f1f5f9;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .plate-cell {
+        font-weight: 700;
+        color: var(--text-main);
+        font-size: 15px;
+      }
+      .type-cell {
+        color: var(--text-muted);
+        font-size: 13px;
+        text-transform: capitalize;
+      }
+      .date-cell {
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+
+      .status {
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-block;
+      }
+      .status-paid {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .status-partial {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .status-unpaid {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      /* Actions */
+      .action-cell {
+        display: flex;
+        justify-content: space-between;
+        padding: 0 10px;
+        width: 100%;
+        align-items: center;
+      }
+      .action-btn-wrapper {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s;
+        background: white;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+      }
+      .action-btn-wrapper i {
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+      .action-btn-wrapper:hover {
+        border-color: var(--primary);
+        background: var(--primary-soft);
+      }
+      .action-btn-wrapper:hover i {
+        color: var(--primary);
+      }
+      .action-release {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+      }
+      .action-release i {
+        color: #166534;
+      }
+      .action-release:hover {
+        background: #166534;
+        border-color: #166534;
+      }
+      .action-release:hover i {
+        color: white;
+      }
+
+      /* Pagination */
+      .pagination {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        padding: 15px 25px;
+        border-top: 1px solid var(--border);
+        background: white;
+      }
+      .page-btn {
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--border);
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        transition: 0.2s;
+      }
+      .page-btn:hover:not(:disabled) {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-soft);
+      }
+      .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      #pageInfo {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin: 0 10px;
+      }
+
+      /* Modals */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(4px);
+        animation: fadeIn 0.2s;
+      }
+      .modal-content {
+        background-color: white;
+        border-radius: 20px;
+        width: 95%;
+        max-width: 900px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        display: flex;
+        flex-direction: column;
+        animation: fadeIn 0.3s ease-out;
+      }
+      #viewModal .modal-content {
+        max-width: 500px;
+      }
+      .modal-header {
+        padding: 25px 30px;
+        border-bottom: 1px solid var(--border);
+        background: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .modal-header h2 {
+        margin: 0;
+        font-size: 20px;
+        color: var(--text-main);
+        font-weight: 800;
+      }
+      .close {
+        width: 36px;
+        height: 36px;
+        background: #f1f5f9;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--text-muted);
+        font-size: 18px;
+        border: none;
+        transition: 0.2s;
+      }
+      .close:hover {
+        background: #fee2e2;
+        color: #ef4444;
+      }
+      .modal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 0;
+      }
+      .modal-left {
+        padding: 30px;
+        border-right: 1px solid var(--border);
+      }
+      .modal-right {
+        padding: 30px;
+        background: #f8fafc;
+      }
+
+      /* Success Modal */
+      #successModal .modal-content {
+        max-width: 400px;
+        text-align: center;
+        padding: 40px;
+        animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .success-icon {
+        width: 70px;
+        height: 70px;
+        background: #dcfce7;
+        color: #166534;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px auto;
+        font-size: 32px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      }
+
+      /* View Modal & Receipt UI */
+      .view-header {
+        margin-bottom: 25px;
+        text-align: center;
+      }
+      .view-stat-circle {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: var(--primary-soft);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px auto;
+        font-size: 28px;
+      }
+      .view-plate {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--text-main);
+        letter-spacing: 1px;
+      }
+      .view-ref {
+        font-size: 14px;
+        color: var(--text-muted);
+        font-family: monospace;
+        background: #f1f5f9;
+        padding: 4px 10px;
+        border-radius: 20px;
+        display: inline-block;
+        margin-top: 5px;
+      }
+      .view-details-box {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 25px;
+        margin-top: 20px;
+        box-shadow: var(--shadow-sm);
+      }
+      .view-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 14px;
+      }
+      .view-row:last-child {
+        margin-bottom: 0;
+      }
+      .view-lbl {
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+      .view-val {
+        color: var(--text-main);
+        font-weight: 600;
+      }
+
+      /* Receipt Card */
+      .receipt-box {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+      }
+      .receipt-box::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 20px;
+        right: 20px;
+        height: 4px;
+        background: var(--primary);
+        border-radius: 0 0 4px 4px;
+      }
+      .receipt-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 13px;
+      }
+      .receipt-label {
+        color: var(--text-muted);
+      }
+      .receipt-val {
+        font-weight: 600;
+        color: var(--text-main);
+      }
+      .receipt-divider {
+        border-bottom: 1px dashed var(--border);
+        margin: 20px 0;
+      }
+      .receipt-total {
+        display: flex;
+        justify-content: space-between;
+        font-weight: 800;
+        font-size: 18px;
+        margin-top: 10px;
+        color: var(--text-main);
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+      .form-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .form-group input,
+      .form-group textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 14px;
+        outline: none;
+        transition: 0.2s;
+      }
+      .form-group input:focus,
+      .form-group textarea:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-soft);
+      }
+
+      .email-option {
+        background: var(--primary-soft);
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid #bfdbfe;
+        margin-top: 20px;
+      }
+      .checkbox-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+      .checkbox-wrapper input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary);
+      }
+      .checkbox-wrapper label {
+        margin: 0;
+        font-size: 14px;
+        color: var(--primary-dark);
+        text-transform: none;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .modal-actions {
+        padding: 25px 30px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        background: #f8fafc;
+        border-radius: 0 0 20px 20px;
+      }
+      .btn {
+        padding: 12px 20px;
+        border-radius: 10px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        transition: 0.2s;
+      }
+      .btn-outline {
+        background: white;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+      }
+      .btn-outline:hover {
+        background: #f1f5f9;
+        color: var(--text-main);
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+      }
+      .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+      }
+
+      .loading,
+      .no-data {
+        text-align: center;
+        padding: 40px;
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-content {
+          margin-left: 0;
+          padding: 20px;
+        }
+        .header-left,
+        .header-right {
+          flex-direction: column;
+          width: 100%;
+        }
+        .search-container {
+          max-width: 100%;
+          width: 100%;
+        }
+        .modal-grid {
+          grid-template-columns: 1fr;
+        }
+        .modal-left {
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
+      }
+      .text p {
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <svg viewBox="0 0 512 512" width="40" height="40" fill="white">
+            <path
+              d="M112,112c0-26.5,21.5-48,48-48h76.3c15.2-22,40.7-36.5,69.7-36.5s54.5,14.5,69.7,36.5H416c26.5,0,48,21.5,48,48v64H112V112z M306,83.5c-11.2,0-20.7,7.8-23.2,18.5h46.4C326.7,91.3,317.2,83.5,306,83.5z"
+            />
+            <path
+              d="M47.5,192C21.3,192,0,213.3,0,239.5v161C0,426.7,21.3,448,47.5,448h17.1c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h161.2c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h12.1c26.2,0,47.5-21.3,47.5-47.5v-161C560,213.3,538.7,192,512.5,192H47.5z M133,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S148.1,456.2,133,456.2z M431,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S446.1,456.2,431,456.2z"
+            />
+          </svg>
+        </div>
+        <div class="text">
+          <h2>VIMS</h2>
+          <p>Release Management</p>
+        </div>
+      </div>
+      <div class="sidebar-menu">
+        <ul>
+          <li>
+            <a href="releasing-dashboard.html"
+              ><i class="fas fa-tachometer-alt"></i> Dashboard</a
+            >
+          </li>
+          <li>
+            <a href="vehicles-ready-for-release.html" class="active"
+              ><i class="fas fa-car"></i> Ready for Release</a
+            >
+          </li>
+          <li>
+            <a href="released-vehicles.html"
+              ><i class="fas fa-file-export"></i> Released Vehicles</a
+            >
+          </li>
+        </ul>
+      </div>
+      <div class="sidebar-logout">
+        <ul>
+          <li>
+            <a href="#" id="logoutBtn"
+              ><i class="fas fa-sign-out-alt"></i> Logout</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="top-bar">
+        <div class="page-title">
+          <h1>Vehicles Ready for Release</h1>
+          <p>Process vehicle releases after payment confirmation.</p>
+        </div>
+
+        <div class="user-menu" id="userMenuBtn">
+          <div class="user-info">
+            <div class="user-name" id="userName">Loading...</div>
+            <div class="user-role" id="userRole">Officer</div>
+          </div>
+          <div class="user-avatar" id="userAvatar">OS</div>
+
+          <div class="profile-dropdown" id="profileDropdown">
+            <div class="dropdown-header">
+              <div class="dropdown-avatar" id="dropdownAvatar">?</div>
+              <div class="dropdown-name" id="dropdownName">User Name</div>
+              <div class="dropdown-role" id="dropdownRole">Role</div>
+            </div>
+            <div class="dropdown-body">
+              <a class="dropdown-item"
+                ><i class="fas fa-cog" style="color: var(--text-muted)"></i>
+                Settings</a
+              >
+              <hr
+                style="border: 0; border-top: 1px solid #eee; margin: 5px 0"
+              />
+              <a class="dropdown-item logout" id="logoutBtnDropdown"
+                ><i class="fas fa-sign-out-alt"></i> Logout</a
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-tabs-wrapper">
+        <div class="nav-tabs">
+          <div
+            class="tab-item active"
+            onclick="switchTab('paid')"
+            id="tab-paid"
+          >
+            Paid / Partial
+          </div>
+          <div class="tab-item" onclick="switchTab('unpaid')" id="tab-unpaid">
+            Unpaid
+          </div>
+        </div>
+      </div>
+
+      <div class="data-table">
+        <div class="table-header">
+          <div class="header-left">
+            <div class="search-container">
+              <i class="fas fa-search"></i>
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search by Plate, Ref, or Owner..."
+              />
+            </div>
+          </div>
+          <div class="header-right">
+            <button class="btn-icon-only" id="refreshBtn" title="Refresh">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Reference No.</th>
+              <th>Plate Number</th>
+              <th>Vehicle Type</th>
+              <th>Owner Name</th>
+              <th>Impound Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="vehiclesTableBody">
+            <tr>
+              <td
+                colspan="7"
+                style="text-align: center; padding: 40px; color: #64748b"
+              >
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="pagination" id="pagination" style="display: none">
+          <button class="page-btn" id="prevPage">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span id="pageInfo">Page 1 of 1</span>
+          <button class="page-btn" id="nextPage">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="releaseModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Confirm Release</h2>
+          <button class="close" id="closeReleaseModal">&times;</button>
+        </div>
+
+        <div class="modal-grid">
+          <div class="modal-left">
+            <div class="form-group">
+              <label>Notes</label>
+              <textarea
+                id="releaseNotes"
+                rows="3"
+                placeholder="Enter optional notes..."
+              ></textarea>
+            </div>
+
+            <div class="email-option">
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="printSlipCheckbox" checked />
+                <label for="printSlipCheckbox">Print Release Slip</label>
+              </div>
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="sendReleaseEmail" checked />
+                <label for="sendReleaseEmail">Notify Owner via Email</label>
+              </div>
+              <div class="form-group" style="margin-bottom: 0">
+                <label>Email Address</label>
+                <input
+                  type="email"
+                  id="releaseEmailAddress"
+                  placeholder="Enter owner email..."
+                />
+                <small
+                  style="
+                    color: #64748b;
+                    font-size: 11px;
+                    margin-top: 4px;
+                    display: block;
+                  "
+                >
+                  *Updating this will save to the owner's record.
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-right">
+            <h3
+              style="
+                font-size: 14px;
+                font-weight: 700;
+                margin-bottom: 15px;
+                color: var(--text-main);
+              "
+            >
+              RECEIPT SUMMARY
+            </h3>
+            <div class="receipt-box">
+              <div class="receipt-row">
+                <span class="receipt-label">Plate Number</span>
+                <span class="receipt-val" id="rPlate">...</span>
+              </div>
+              <div class="receipt-row">
+                <span class="receipt-label">Owner</span>
+                <span class="receipt-val" id="rOwner">...</span>
+              </div>
+              <div class="receipt-divider"></div>
+              <div class="receipt-row">
+                <span class="receipt-label">Total Bill</span>
+                <span class="receipt-val" id="rTotal">₱0.00</span>
+              </div>
+              <div class="receipt-row">
+                <span class="receipt-label">Amount Paid</span>
+                <span
+                  class="receipt-val"
+                  style="color: var(--success)"
+                  id="rPaid"
+                  >₱0.00</span
+                >
+              </div>
+              <div class="receipt-total">
+                <span>BALANCE</span>
+                <span style="color: var(--text-main)" id="rBalance">₱0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-outline" onclick="closeReleaseModal()">
+            Cancel
+          </button>
+          <button
+            class="btn btn-primary"
+            id="confirmReleaseBtn"
+            onclick="confirmRelease()"
+          >
+            <i class="fas fa-check-circle"></i> Confirm Release
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="successModal" class="modal">
+      <div class="modal-content">
+        <div class="success-icon">
+          <i class="fas fa-check"></i>
+        </div>
+        <h2
+          style="
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: var(--text-main);
+            text-align: center;
+          "
+        >
+          Success!
+        </h2>
+        <p
+          style="
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+          "
+        >
+          Vehicle released successfully.
+        </p>
+        <button
+          class="btn btn-primary"
+          style="width: 100%; justify-content: center"
+          onclick="closeSuccessModal()"
+        >
+          OK
+        </button>
+      </div>
+    </div>
+
+    <div id="viewModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Vehicle Details</h2>
+          <button class="close" id="closeViewModal">&times;</button>
+        </div>
+        <div class="modal-body" id="viewModalContent"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        getDocs,
+        query,
+        where,
+        addDoc,
+        doc,
+        updateDoc,
+      } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+      import {
+        getAuth,
+        signOut,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyByzd88bcUAq0VdP0w6oB8W_b2AUgoIzXc",
+        authDomain: "vehicle-impound.firebaseapp.com",
+        projectId: "vehicle-impound",
+        storageBucket: "vehicle-impound.appspot.com",
+        messagingSenderId: "69239563292",
+        appId: "1:69239563292:web:281912e8a38301c0feabd9",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+
+      // Variables
+      let currentUser = null;
+      let allVehicles = [];
+      let filteredVehicles = [];
+      let currentPage = 1;
+      const itemsPerPage = 8;
+      let currentTab = "paid";
+      let currentReleaseId = null;
+
+      // DOM Elements
+      const searchInput = document.getElementById("searchInput");
+      const refreshBtn = document.getElementById("refreshBtn");
+      const prevPageBtn = document.getElementById("prevPage");
+      const nextPageBtn = document.getElementById("nextPage");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const logoutBtnDropdown = document.getElementById("logoutBtnDropdown");
+
+      document.addEventListener("DOMContentLoaded", () => {
+        setupEventListeners();
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            await loadUserData(user);
+            await loadVehicles();
+          } else {
+            window.location.href = "../index.html";
+          }
+        });
+      });
+
+      // --- DROPDOWN TOGGLE LOGIC ---
+      const userMenuBtn = document.getElementById("userMenuBtn");
+      const profileDropdown = document.getElementById("profileDropdown");
+
+      userMenuBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        profileDropdown.classList.toggle("active");
+        userMenuBtn.classList.toggle("active");
+      });
+
+      document.addEventListener("click", (e) => {
+        if (
+          !userMenuBtn.contains(e.target) &&
+          !profileDropdown.contains(e.target)
+        ) {
+          profileDropdown.classList.remove("active");
+          userMenuBtn.classList.remove("active");
+        }
+      });
+
+      // --- Global Window Functions (for HTML onclick attributes) ---
+
+      window.switchTab = (tabName) => {
+        currentTab = tabName;
+        document
+          .querySelectorAll(".tab-item")
+          .forEach((el) => el.classList.remove("active"));
+        document.getElementById(`tab-${tabName}`).classList.add("active");
+        currentPage = 1;
+        filterVehicles();
+      };
+
+      window.onclick = (e) => {
+        // Dropdown handled by event listener above
+        if (e.target === document.getElementById("releaseModal"))
+          closeReleaseModal();
+        if (e.target === document.getElementById("viewModal"))
+          document.getElementById("viewModal").style.display = "none";
+        if (e.target === document.getElementById("successModal"))
+          closeSuccessModal();
+      };
+
+      // --- Event Listeners ---
+
+      function setupEventListeners() {
+        searchInput.addEventListener("input", filterVehicles);
+        refreshBtn.addEventListener("click", refreshData);
+        prevPageBtn.addEventListener("click", () => changePage(-1));
+        nextPageBtn.addEventListener("click", () => changePage(1));
+
+        if (logoutBtn) logoutBtn.addEventListener("click", logout);
+        if (logoutBtnDropdown)
+          logoutBtnDropdown.addEventListener("click", logout);
+
+        document
+          .getElementById("closeReleaseModal")
+          .addEventListener("click", closeReleaseModal);
+        document
+          .getElementById("closeViewModal")
+          .addEventListener(
+            "click",
+            () => (document.getElementById("viewModal").style.display = "none")
+          );
+      }
+
+      // --- Data Loading ---
+
+      async function loadUserData(firebaseUser) {
+        try {
+          const q = query(
+            collection(db, "users"),
+            where("email", "==", firebaseUser.email)
+          );
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            const d = snap.docs[0].data();
+
+            currentUser = {
+              uid: firebaseUser.uid,
+              readableId: d.readableId,
+              fullName: d.fullName, // Mapped here
+              role: d.role,
+              email: d.email,
+            };
+
+            updateUserProfileUI();
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      function updateUserProfileUI() {
+        // Fallback if data missing
+        const name = currentUser.fullName || "Officer";
+        const role = currentUser.role || "Officer";
+        const initials = name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .substring(0, 2)
+          .toUpperCase();
+
+        // Update Top Bar
+        document.getElementById("userName").textContent = name;
+        document.getElementById("userRole").textContent = role.toUpperCase();
+        document.getElementById("userAvatar").textContent = initials;
+
+        // Update Dropdown Header
+        document.getElementById("dropdownName").textContent = name;
+        document.getElementById("dropdownRole").textContent =
+          role.toUpperCase();
+        document.getElementById("dropdownAvatar").textContent = initials;
+      }
+
+      async function loadVehicles() {
+        document.getElementById("vehiclesTableBody").innerHTML =
+          '<tr><td colspan="7" style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+        try {
+          // FIXED QUERY: Fetch 'impounded', 'paid', AND 'partially paid'
+          const vQ = query(
+            collection(db, "impoundedVehicles"),
+            where("status", "in", ["impounded", "paid", "partially paid"])
+          );
+          const vSnap = await getDocs(vQ);
+
+          // Fetch Payments to link status
+          const pQ = query(collection(db, "payments"));
+          const pSnap = await getDocs(pQ);
+          const pMap = new Map();
+          pSnap.forEach((d) => {
+            if (d.data().vehicleId) pMap.set(d.data().vehicleId, d.data());
+          });
+
+          allVehicles = [];
+          vSnap.forEach((doc) => {
+            const d = doc.data();
+            const p = pMap.get(doc.id);
+
+            // Logic: Financials
+            let totalAmount = p?.totalFine || d.fineAmount || 0;
+            let amountPaid = p?.amountPaid || 0;
+
+            // Status Logic:
+            // 1. Default to 'unpaid' if no payment record.
+            // 2. Use payment status if available.
+            let status = p?.paymentStatus || "unpaid";
+
+            // 3. Special Case: If vehicle status is 'paid' (from Cashier update), force status 'paid'
+            if (d.status === "paid") status = "paid";
+
+            let balance = totalAmount - amountPaid;
+            if (status === "paid") {
+              balance = 0;
+              if (amountPaid === 0) amountPaid = totalAmount; // Fix visual if data sync lag
+            }
+            if (status === "unpaid") amountPaid = 0;
+
+            // Get reference number - using referenceNumber field first, fallback to readableId, then ID
+            const referenceNumber =
+              d.referenceNumber ||
+              d.readableId ||
+              doc.id.substring(0, 8).toUpperCase();
+
+            allVehicles.push({
+              id: doc.id,
+              referenceNumber: referenceNumber, // Added reference number
+              plateNumber: d.plateNumber || "N/A",
+              vehicleType: d.vehicleType || "N/A",
+              ownerName: d.ownerName || "Unknown",
+              ownerEmail: d.ownerEmail || "",
+              ownerContact: d.ownerContact || "N/A",
+              vehicleModel: d.vehicleModel || "N/A",
+              impoundDate: d.impoundDate || "N/A",
+              paymentStatus: status,
+              totalAmount: totalAmount,
+              amountPaid: amountPaid,
+              balance: balance,
+              receiptNo: p?.receiptNumber || "N/A",
+              paymentDate: p?.paymentDate || "N/A",
+            });
+          });
+
+          filterVehicles();
+        } catch (e) {
+          console.error(e);
+          document.getElementById("vehiclesTableBody").innerHTML =
+            '<tr><td colspan="7" style="text-align:center; color:red;">Error loading data</td></tr>';
+        }
+      }
+
+      // --- Filtering & Rendering ---
+
+      function filterVehicles() {
+        const term = searchInput.value.toLowerCase().trim();
+
+        filteredVehicles = allVehicles.filter((v) => {
+          // 1. Search Logic
+          const matchesSearch =
+            !term ||
+            v.referenceNumber.toLowerCase().includes(term) ||
+            v.plateNumber.toLowerCase().includes(term) ||
+            v.ownerName.toLowerCase().includes(term);
+
+          // 2. Tab Logic
+          let matchesTab = false;
+          if (currentTab === "paid") {
+            // Include 'paid', 'partially paid', 'partial'
+            matchesTab = ["paid", "partially paid", "partial"].includes(
+              v.paymentStatus
+            );
+          } else if (currentTab === "unpaid") {
+            // Strictly unpaid
+            matchesTab = v.paymentStatus === "unpaid";
+          }
+
+          return matchesSearch && matchesTab;
+        });
+
+        currentPage = 1;
+        renderTable();
+      }
+
+      function renderTable() {
+        const tbody = document.getElementById("vehiclesTableBody");
+
+        if (filteredVehicles.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="7" style="text-align:center; padding:40px;">No vehicles found.</td></tr>';
+          document.getElementById("pagination").style.display = "none";
+          return;
+        }
+
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = filteredVehicles.slice(start, end);
+
+        tbody.innerHTML = pageData
+          .map((v) => {
+            let displayStatus = v.paymentStatus.toUpperCase();
+            if (displayStatus === "PARTIALLY PAID") displayStatus = "PARTIAL";
+
+            return `
+                <tr>
+                    <td><span class="ref-cell">${v.referenceNumber}</span></td>
+                    <td class="plate-cell">${v.plateNumber}</td>
+                    <td class="type-cell">${v.vehicleType}</td>
+                    <td>${v.ownerName}</td>
+                    <td class="date-cell">${
+                      v.impoundDate
+                        ? new Date(v.impoundDate).toLocaleDateString()
+                        : "N/A"
+                    }</td>
+                    <td><span class="status ${getStatusClass(
+                      v.paymentStatus
+                    )}">${displayStatus}</span></td>
+                    <td>
+                        <div class="action-cell">
+                            <div class="action-btn-wrapper" onclick="viewDetails('${
+                              v.id
+                            }')" title="View"><i class="fas fa-eye"></i></div>
+                            ${
+                              v.paymentStatus === "paid"
+                                ? `<div class="action-btn-wrapper action-release" onclick="openReleaseModal('${v.id}')" title="Release"><i class="fas fa-check"></i></div>`
+                                : ""
+                            }
+                        </div>
+                    </td>
+                </tr>
+            `;
+          })
+          .join("");
+
+        updatePagination();
+      }
+
+      function updatePagination() {
+        const pagination = document.getElementById("pagination");
+        const total = Math.ceil(filteredVehicles.length / itemsPerPage);
+        if (total > 1) {
+          pagination.style.display = "flex";
+          document.getElementById(
+            "pageInfo"
+          ).textContent = `Page ${currentPage} of ${total}`;
+          prevPageBtn.disabled = currentPage === 1;
+          nextPageBtn.disabled = currentPage === total;
+        } else {
+          pagination.style.display = "none";
+        }
+      }
+
+      function changePage(dir) {
+        const total = Math.ceil(filteredVehicles.length / itemsPerPage);
+        currentPage += dir;
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > total) currentPage = total;
+        renderTable();
+      }
+
+      function getStatusClass(s) {
+        if (s === "paid") return "status-paid";
+        if (s === "unpaid") return "status-unpaid";
+        return "status-partial";
+      }
+
+      // --- Release Modal & Receipt Logic ---
+
+      window.openReleaseModal = (id) => {
+        const v = allVehicles.find((x) => x.id === id);
+        if (!v) return;
+        currentReleaseId = id;
+
+        // Receipt Populate
+        document.getElementById("rPlate").textContent = v.plateNumber;
+        document.getElementById("rOwner").textContent = v.ownerName;
+        document.getElementById("rTotal").textContent =
+          "₱" + v.totalAmount.toLocaleString();
+        document.getElementById("rPaid").textContent =
+          "₱" + v.amountPaid.toLocaleString();
+        document.getElementById("rBalance").textContent =
+          "₱" + v.balance.toLocaleString();
+
+        // Form Populate
+        document.getElementById("releaseEmailAddress").value =
+          v.ownerEmail || "";
+        document.getElementById("releaseNotes").value = "";
+        document.getElementById("sendReleaseEmail").checked = true;
+        document.getElementById("printSlipCheckbox").checked = true; // Default print checked
+
+        document.getElementById("releaseModal").style.display = "flex";
+      };
+
+      window.closeReleaseModal = () => {
+        document.getElementById("releaseModal").style.display = "none";
+        currentReleaseId = null;
+      };
+
+      window.confirmRelease = async () => {
+        if (!currentReleaseId || !currentUser) return;
+
+        const btn = document.getElementById("confirmReleaseBtn");
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+
+        const vehicle = allVehicles.find((v) => v.id === currentReleaseId);
+        const enteredEmail = document.getElementById(
+          "releaseEmailAddress"
+        ).value;
+        const notes = document.getElementById("releaseNotes").value;
+        const sendEmail = document.getElementById("sendReleaseEmail").checked;
+        const shouldPrint =
+          document.getElementById("printSlipCheckbox").checked; // Check Print Status
+
+        try {
+          // 1. Release Record
+          await addDoc(collection(db, "releases"), {
+            vehicleId: currentReleaseId,
+            releasedBy: currentUser.uid,
+            releaseDate: new Date().toISOString(),
+            notes: notes,
+            status: "released",
+          });
+
+          // 2. Activity Log
+          await addDoc(collection(db, "activityLogs"), {
+            action: "released",
+            vehicleId: currentReleaseId,
+            userId: currentUser.uid,
+            timestamp: new Date().toISOString(),
+            details: "Released. Notes: " + notes,
+          });
+
+          // 3. Update Vehicle
+          const updateData = {
+            status: "released",
+            updatedAt: new Date().toISOString(),
+          };
+          if (enteredEmail && enteredEmail !== vehicle.ownerEmail) {
+            updateData.ownerEmail = enteredEmail;
+          }
+
+          await updateDoc(
+            doc(db, "impoundedVehicles", currentReleaseId),
+            updateData
+          );
+
+          // 4. Send Email
+          if (sendEmail && enteredEmail) {
+            await sendReleaseEmail(
+              enteredEmail,
+              vehicle.ownerName,
+              vehicle.plateNumber
+            );
+          }
+
+          // 5. Auto-Print Logic
+          if (shouldPrint) {
+            // Open in new tab which auto-prints via window.print()
+            window.open(`release-slip.html?id=${currentReleaseId}`, "_blank");
+          }
+
+          closeReleaseModal();
+          // 6. Show Success Modal
+          document.getElementById("successModal").style.display = "flex";
+        } catch (e) {
+          console.error(e);
+          alert("Error: " + e.message);
+          btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm Release';
+          btn.disabled = false;
+        }
+      };
+
+      window.closeSuccessModal = async () => {
+        document.getElementById("successModal").style.display = "none";
+        document.getElementById("confirmReleaseBtn").innerHTML =
+          '<i class="fas fa-check-circle"></i> Confirm Release';
+        document.getElementById("confirmReleaseBtn").disabled = false;
+        await refreshData();
+      };
+
+      async function sendReleaseEmail(email, name, plate) {
+        const url = "https://api.brevo.com/v3/smtp/email";
+        const apiKey = "YOUR_BREVO_KEY";
+
+        const body = {
+          sender: { name: "LTO Releasing", email: "lawrencekier14@gmail.com" },
+          to: [{ email: email, name: name }],
+          subject: `Vehicle Released - ${plate}`,
+          htmlContent: `
+                    <div style="font-family:Arial; padding:20px; border:1px solid #eee;">
+                        <h2 style="color:#2563eb;">Vehicle Release Confirmation</h2>
+                        <p>Hello <strong>${name}</strong>,</p>
+                        <p>Your vehicle (${plate}) has been officially released.</p>
+                        <p>You may now exit the impound facility.</p>
+                    </div>
+                `,
+        };
+
+        if (apiKey === "YOUR_BREVO_KEY") return;
+
+        await fetch(url, {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "api-key": apiKey,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
+      }
+
+      // View Modal
+      window.viewDetails = (id) => {
+        const v = allVehicles.find((x) => x.id === id);
+        if (!v) return;
+
+        let displayStatus = v.paymentStatus.toUpperCase();
+        if (displayStatus === "PARTIALLY PAID") displayStatus = "PARTIAL";
+
+        let statusColor = "#166534";
+        let statusBg = "#dcfce7";
+        if (v.paymentStatus === "unpaid") {
+          statusColor = "#991b1b";
+          statusBg = "#fee2e2";
+        }
+        if (
+          v.paymentStatus === "partial" ||
+          v.paymentStatus === "partially paid"
+        ) {
+          statusColor = "#1e40af";
+          statusBg = "#eff6ff";
+        }
+
+        document.getElementById("viewModalContent").innerHTML = `
+                <div class="view-header">
+                    <div class="view-stat-circle"><i class="fas fa-car"></i></div>
+                    <div class="view-plate">${v.plateNumber}</div>
+                    <div class="view-ref">Ref: ${v.referenceNumber}</div>
+                </div>
+
+                <div style="text-align:center; margin-bottom: 20px;">
+                    <span style="background:${statusBg}; color:${statusColor}; padding:5px 15px; border-radius:20px; font-weight:700; font-size:12px;">${displayStatus}</span>
+                </div>
+
+                <div class="view-details-box">
+                    <div class="view-row"><span class="view-lbl">Owner Name</span><span class="view-val">${
+                      v.ownerName
+                    }</span></div>
+                    <div class="view-row"><span class="view-lbl">Vehicle Type</span><span class="view-val">${
+                      v.vehicleType
+                    }</span></div>
+                    <div class="view-row"><span class="view-lbl">Model</span><span class="view-val">${
+                      v.vehicleModel
+                    }</span></div>
+                    <div class="view-row"><span class="view-lbl">Contact</span><span class="view-val">${
+                      v.ownerContact
+                    }</span></div>
+                </div>
+
+                <div class="view-details-box" style="background:#fff; border-color:${statusColor}">
+                    <div class="view-row"><span class="view-lbl">Total Bill</span><span class="view-val">₱${v.totalAmount.toLocaleString()}</span></div>
+                    <div class="view-row"><span class="view-lbl">Amount Paid</span><span class="view-val" style="color:var(--success)">₱${v.amountPaid.toLocaleString()}</span></div>
+                    <div class="view-row" style="margin-top:10px; padding-top:10px; border-top:1px dashed #e2e8f0">
+                        <span class="view-lbl" style="font-weight:700">REMAINING BALANCE</span>
+                        <span class="view-val" style="font-size:16px; color:${
+                          v.balance > 0 ? "var(--danger)" : "var(--text-main)"
+                        }">₱${v.balance.toLocaleString()}</span>
+                    </div>
+                </div>
+            `;
+        document.getElementById("viewModal").style.display = "flex";
+      };
+
+      async function refreshData() {
+        const btn = document.getElementById("refreshBtn");
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        await loadVehicles();
+        btn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+      }
+
+      async function logout() {
+        await signOut(auth);
+        window.location.href = "../index.html";
+      }
+    </script>
+  </body>
+</html>

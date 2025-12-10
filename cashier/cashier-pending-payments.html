@@ -1,0 +1,2448 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pending Payments - VIMS</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <style>
+      :root {
+        /* VIMS Modern Palette */
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --sidebar-bg: #1e293b;
+        --bg-body: #f1f5f9;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --success: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --border: #e2e8f0;
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --radius: 12px;
+        --anim-speed: 0.25s;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+      }
+
+      body {
+        background-color: var(--bg-body);
+        display: flex;
+        min-height: 100vh;
+        color: var(--text-main);
+        overflow-x: hidden;
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 260px;
+        background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+        color: white;
+        height: 100vh;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+        transition: var(--anim-speed);
+      }
+
+      .sidebar-content {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .sidebar-header {
+        padding: 30px 24px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .logo svg {
+        width: 40px;
+        height: 40px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+      }
+      .sidebar-header h2 {
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .sidebar-menu {
+        padding: 20px 15px;
+        flex: 1;
+        overflow-y: auto;
+      }
+      .sidebar-menu ul {
+        list-style: none;
+      }
+      .sidebar-menu li {
+        margin-bottom: 5px;
+      }
+      .sidebar-menu a {
+        display: flex;
+        align-items: center;
+        padding: 14px 20px;
+        color: #94a3b8;
+        text-decoration: none;
+        transition: var(--anim-speed);
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 14px;
+      }
+      .sidebar-menu a:hover,
+      .sidebar-menu a.active {
+        background-color: rgba(255, 255, 255, 0.08);
+        color: white;
+      }
+      .sidebar-menu a.active {
+        background: var(--primary);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      }
+      .sidebar-menu i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+      }
+
+      .sidebar-logout {
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.2);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .sidebar-logout ul {
+        list-style: none;
+      }
+      .sidebar-logout a {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        color: #fca5a5;
+        text-decoration: none;
+        transition: 0.3s;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+      .sidebar-logout a:hover {
+        background-color: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+      }
+      .sidebar-logout i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+      }
+
+      /* Main Content */
+      .main-content {
+        flex: 1;
+        margin-left: 260px;
+        padding: 30px 40px;
+        transition: var(--anim-speed);
+      }
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 35px;
+      }
+      .page-title h1 {
+        font-size: 26px;
+        color: var(--text-main);
+        font-weight: 800;
+        margin-bottom: 5px;
+      }
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      /* User Menu */
+      .user-menu {
+        display: flex;
+        align-items: center;
+        position: relative;
+        padding: 6px 8px 6px 16px;
+        border-radius: 50px;
+        background: white;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .user-menu:hover {
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+      }
+      .user-info {
+        text-align: right;
+        margin-right: 12px;
+      }
+      .user-name {
+        font-weight: 700;
+        color: var(--text-main);
+        font-size: 14px;
+      }
+      .user-role {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .user-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+      }
+      .logout-dropdown {
+        position: absolute;
+        top: 60px;
+        right: 0;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 10px;
+        min-width: 200px;
+        display: none;
+        z-index: 1000;
+        border: 1px solid var(--border);
+      }
+      .logout-dropdown.show {
+        display: block;
+      }
+      .logout-item {
+        padding: 12px 15px;
+        display: flex;
+        align-items: center;
+        color: var(--text-main);
+        text-decoration: none;
+        transition: 0.2s;
+        cursor: pointer;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        font-size: 14px;
+        border-radius: 8px;
+      }
+      .logout-item:hover {
+        background-color: var(--bg-body);
+        color: var(--primary);
+      }
+
+      /* Stats */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 24px;
+        margin-bottom: 35px;
+        animation: fadeIn 0.4s ease-out;
+      }
+      .stat-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        padding: 25px;
+        border: 1px solid var(--border);
+        transition: 0.3s;
+      }
+      .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+      }
+      .stat-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 5px;
+      }
+      .stat-label {
+        font-size: 13px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      /* Table */
+      .data-table {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        margin-bottom: 30px;
+        border: 1px solid var(--border);
+        animation: fadeIn 0.5s ease-out;
+      }
+      .table-header {
+        padding: 20px 25px;
+        background: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+      .header-left {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex: 1;
+      }
+      .header-right {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .search-container {
+        display: flex;
+        align-items: center;
+        position: relative;
+        width: 100%;
+        max-width: 300px;
+      }
+      .search-container input {
+        width: 100%;
+        padding: 10px 35px 10px 15px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 14px;
+        background: #f8fafc;
+        outline: none;
+      }
+      .search-container i {
+        position: absolute;
+        right: 12px;
+        color: var(--text-muted);
+        pointer-events: none;
+      }
+
+      .btn {
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+      .btn-outline {
+        background: white;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+      }
+      .btn-icon {
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        justify-content: center;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: white;
+        color: var(--text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+      }
+      .btn-icon:hover {
+        color: var(--primary);
+        border-color: var(--primary);
+      }
+      .btn-icon i.spinning {
+        animation: spin 0.8s linear infinite;
+      }
+
+      /* Filter Modal */
+      .filter-wrapper {
+        position: relative;
+      }
+      .filter-modal {
+        display: none;
+        position: absolute;
+        top: 110%;
+        right: 0;
+        width: 280px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        border: 1px solid var(--border);
+        padding: 20px;
+        z-index: 100;
+      }
+      .filter-modal.show {
+        display: block;
+      }
+      .filter-group {
+        margin-bottom: 15px;
+      }
+      .filter-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 5px;
+        text-transform: uppercase;
+      }
+      .filter-group input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+      }
+      .filter-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+      }
+      .btn-block {
+        flex: 1;
+        justify-content: center;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        white-space: nowrap;
+      }
+      th {
+        background: #f8fafc;
+        padding: 16px 24px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--border);
+      }
+      td {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-main);
+        font-size: 14px;
+        vertical-align: middle;
+      }
+      tr:hover td {
+        background-color: #f8fafc;
+      }
+
+      .status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        display: inline-block;
+      }
+      .status-pending {
+        background: #fef9c3;
+        color: #854d0e;
+        border: 1px solid #fde047;
+      }
+      .status-paid {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #86efac;
+      }
+      .status-overdue {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+      .status-partial {
+        background: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+      }
+      .amount {
+        font-weight: 700;
+        font-family: monospace;
+        font-size: 15px;
+      }
+
+      .action-cell {
+        display: flex;
+        gap: 8px;
+      }
+      .action-btn-wrapper {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s;
+        background: #f1f5f9;
+      }
+      .action-btn-wrapper:hover {
+        background: var(--sidebar-bg);
+      }
+      .action-btn-wrapper:hover i {
+        color: white;
+      }
+      .action-btn-wrapper i {
+        color: var(--sidebar-bg);
+        font-size: 14px;
+      }
+
+      /* Pagination */
+      .pagination {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        padding: 15px 25px;
+        border-top: 1px solid var(--border);
+        background: white;
+      }
+      .page-btn {
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--border);
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+      }
+      .page-btn:hover:not(:disabled) {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      #pageInfo {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin: 0 10px;
+      }
+
+      /* Payment Modal */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(4px);
+        animation: fadeIn 0.2s;
+      }
+      .modal-content {
+        background-color: white;
+        border-radius: 16px;
+        width: 95%;
+        max-width: 1100px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+      }
+      .modal-header {
+        padding: 20px 30px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: white;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .modal-header h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .close {
+        background: #f1f5f9;
+        border: none;
+        color: var(--text-muted);
+        font-size: 20px;
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .close:hover {
+        background: #e2e8f0;
+        color: var(--danger);
+      }
+
+      .payment-container {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        min-height: 500px;
+      }
+      .payment-details {
+        padding: 30px;
+        border-right: 1px solid var(--border);
+      }
+      .payment-summary {
+        padding: 30px;
+        background-color: #f8fafc;
+      }
+
+      .section-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        text-transform: uppercase;
+      }
+      .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+      .info-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 15px;
+      }
+      .info-card h3 {
+        color: var(--text-main);
+        margin-bottom: 15px;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .info-item {
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+      }
+      .info-label {
+        color: var(--text-muted);
+      }
+      .info-value {
+        color: var(--text-main);
+        font-weight: 600;
+        text-align: right;
+      }
+
+      .violations-list {
+        margin-top: 10px;
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px;
+        background-color: #f8fafc;
+      }
+      .violation-item {
+        padding: 10px;
+        margin-bottom: 5px;
+        background-color: white;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .violation-code {
+        font-weight: 700;
+        color: var(--primary);
+        font-size: 12px;
+      }
+      .violation-fine {
+        color: var(--danger);
+        font-weight: 600;
+        font-size: 12px;
+      }
+
+      .fee-breakdown {
+        margin-top: 20px;
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+      }
+      .fee-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        font-size: 13px;
+      }
+      .fee-amount {
+        font-weight: 600;
+      }
+      .total-amount {
+        display: flex;
+        justify-content: space-between;
+        padding: 15px 0 0 0;
+        margin-top: 10px;
+        border-top: 2px solid var(--primary);
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      input[type="number"],
+      input[type="email"],
+      input[type="text"] {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        outline: none;
+      }
+      input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+
+      .payment-methods {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .payment-method {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        background: white;
+      }
+      .payment-method:hover {
+        border-color: var(--primary);
+        background: #eff6ff;
+      }
+      .payment-method.selected {
+        border-color: var(--primary);
+        background: #eff6ff;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+      }
+      .payment-method i {
+        font-size: 20px;
+        margin-bottom: 5px;
+        color: var(--primary);
+        display: block;
+      }
+      .payment-method span {
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 30px;
+      }
+      .btn-success {
+        background: var(--success);
+        color: white;
+        border: none;
+      }
+      .btn-success:hover {
+        background: #059669;
+      }
+
+      .receipt-preview {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+        position: relative;
+      }
+      .receipt-preview::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: var(--primary);
+        border-radius: 8px 8px 0 0;
+      }
+      .receipt-header {
+        text-align: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px dashed var(--border);
+      }
+      .receipt-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+      .receipt-item strong {
+        color: var(--text-main);
+        font-weight: 600;
+      }
+      .email-status {
+        padding: 10px 15px;
+        border-radius: 6px;
+        margin-top: 15px;
+        display: none;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+      }
+      .email-status.success {
+        background-color: #dcfce7;
+        color: #166534;
+      }
+      .email-status.error {
+        background-color: #fee2e2;
+        color: #991b1b;
+      }
+
+      @media (max-width: 1024px) {
+        .payment-container {
+          grid-template-columns: 1fr;
+        }
+        .payment-details {
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
+      }
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-content {
+          margin-left: 0;
+          padding: 20px;
+        }
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+        .header-left {
+          flex-direction: column;
+          width: 100%;
+        }
+        .search-container {
+          max-width: 100%;
+        }
+      }
+      .text p {
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="sidebar-content">
+        <div class="sidebar-header">
+          <div class="logo">
+            <svg viewBox="0 0 512 512" width="40" height="40" fill="white">
+              <path
+                d="M112,112c0-26.5,21.5-48,48-48h76.3c15.2-22,40.7-36.5,69.7-36.5s54.5,14.5,69.7,36.5H416c26.5,0,48,21.5,48,48v64H112V112z M306,83.5c-11.2,0-20.7,7.8-23.2,18.5h46.4C326.7,91.3,317.2,83.5,306,83.5z"
+              />
+              <path
+                d="M47.5,192C21.3,192,0,213.3,0,239.5v161C0,426.7,21.3,448,47.5,448h17.1c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h161.2c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h12.1c26.2,0,47.5-21.3,47.5-47.5v-161C560,213.3,538.7,192,512.5,192H47.5z M133,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S148.1,456.2,133,456.2z M431,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S446.1,456.2,431,456.2z"
+              />
+            </svg>
+          </div>
+          <div class="text">
+            <h2>VIMS</h2>
+            <p>Payments Management</p>
+          </div>
+        </div>
+        <div class="sidebar-menu">
+          <ul>
+            <li>
+              <a href="cashier-dashboard.html"
+                ><i class="fas fa-tachometer-alt"></i> Dashboard</a
+              >
+            </li>
+            <li>
+              <a href="cashier-pending-payments.html" class="active"
+                ><i class="fas fa-clock"></i> Pending Payments</a
+              >
+            </li>
+            <li>
+              <a href="cashier-payment-history.html"
+                ><i class="fas fa-history"></i> Transaction History</a
+              >
+            </li>
+          </ul>
+        </div>
+        <div class="sidebar-logout">
+          <ul>
+            <li>
+              <a href="#" onclick="logout()"
+                ><i class="fas fa-sign-out-alt"></i> Logout</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="top-bar">
+        <div class="page-title">
+          <h1>Pending Payments</h1>
+          <p>Process outstanding payments for impounded vehicles.</p>
+        </div>
+        <div class="user-menu" onclick="toggleLogoutDropdown()">
+          <div class="user-info">
+            <div class="user-name" id="userDisplayName">Loading...</div>
+            <div class="user-role" id="userRole">Cashier</div>
+          </div>
+          <div class="user-avatar" id="userAvatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="logout-dropdown" id="logoutDropdown">
+            <button class="logout-item">
+              <i class="fas fa-user"></i> My Profile
+            </button>
+            <button class="logout-item">
+              <i class="fas fa-key"></i> Change Password
+            </button>
+            <button
+              class="logout-item"
+              onclick="logout()"
+              style="color: var(--danger)"
+            >
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="total-pending">0</div>
+          <div class="stat-label">Total Pending</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="total-amount">₱0</div>
+          <div class="stat-label">Total Amount Due</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="overdue-payments">0</div>
+          <div class="stat-label">Overdue Payments</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="due-this-week">0</div>
+          <div class="stat-label">Due This Week</div>
+        </div>
+      </div>
+
+      <div class="data-table">
+        <div class="table-header">
+          <div class="header-left">
+            <div class="search-container">
+              <input
+                type="text"
+                id="search-input"
+                placeholder="Search Plate, Reference, Owner..."
+              />
+              <i class="fas fa-search"></i>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="filter-wrapper">
+              <button class="btn btn-outline" onclick="toggleFilterModal()">
+                <i class="fas fa-filter"></i> Filter Date
+              </button>
+              <div class="filter-modal" id="filterModal">
+                <div class="filter-group">
+                  <label>Start Date</label>
+                  <input type="date" id="filterStartDate" />
+                </div>
+                <div class="filter-group">
+                  <label>End Date</label>
+                  <input type="date" id="filterEndDate" />
+                </div>
+                <div class="filter-actions">
+                  <button
+                    class="btn btn-outline btn-block"
+                    onclick="resetDateFilter()"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    class="btn btn-primary btn-block"
+                    onclick="applyDateFilter()"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-primary">
+              <i class="fas fa-download"></i> Export
+            </button>
+            <button
+              class="btn-icon"
+              onclick="fetchPendingPayments()"
+              title="Refresh"
+            >
+              <i class="fas fa-sync-alt" id="refreshIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Ref No.</th>
+              <th>Plate No.</th>
+              <th>Type</th>
+              <th>Owner Name</th>
+              <th>Total Amount (Bal)</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="payments-table-body">
+            <tr>
+              <td colspan="8" class="loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="pagination" id="pagination" style="display: none">
+          <button class="page-btn" id="prevPage">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span id="pageInfo">Page 1 of 1</span>
+          <button class="page-btn" id="nextPage">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="paymentModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Process Payment - <span id="modalRefNo">...</span></h2>
+          <button class="close" onclick="closePaymentModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="payment-container">
+            <div class="payment-details">
+              <h2 class="section-title">
+                <i class="fas fa-car"></i> Vehicle Information
+              </h2>
+              <div class="info-grid">
+                <div class="info-card">
+                  <h3>Details</h3>
+                  <div class="info-item">
+                    <span class="info-label">Reference No:</span
+                    ><span class="info-value" id="detailRefNo"></span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Plate Number:</span
+                    ><span class="info-value" id="detailPlate"></span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Vehicle Type:</span
+                    ><span class="info-value" id="detailType"></span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Owner Name:</span
+                    ><span class="info-value" id="detailOwner"></span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Contact:</span
+                    ><span class="info-value" id="detailContact"></span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Email:</span
+                    ><span class="info-value" id="detailEmail"></span>
+                  </div>
+                </div>
+                <div class="info-card">
+                  <h3>Status</h3>
+                  <div class="info-item">
+                    <span class="info-label">Total Violations:</span
+                    ><span class="info-value" id="totalViolations"></span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Impound Date:</span
+                    ><span class="info-value" id="detailImpoundDate"></span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Days Impounded:</span
+                    ><span class="info-value" id="detailDays"></span>
+                  </div>
+                  <div class="violations-list" id="violationsList"></div>
+                </div>
+              </div>
+
+              <div class="fee-breakdown">
+                <h3 class="section-title">
+                  <i class="fas fa-receipt"></i> Fee Breakdown
+                </h3>
+                <div class="fee-item">
+                  <span class="fee-label">Violation Fines</span
+                  ><span class="fee-amount" id="feeViolation">₱0</span>
+                </div>
+                <div class="fee-item">
+                  <span class="fee-label"
+                    >Storage Fee (<span id="storageDays">0</span> days)</span
+                  ><span class="fee-amount" id="feeStorage">₱0</span>
+                </div>
+                <div class="fee-item">
+                  <span class="fee-label">Towing Fee</span
+                  ><span class="fee-amount" id="feeTowing">₱0</span>
+                </div>
+                <div class="fee-item">
+                  <span class="fee-label">Documentation Fee</span
+                  ><span class="fee-amount" id="feeDocumentation">₱0</span>
+                </div>
+                <div class="total-amount">
+                  <span>Outstanding Balance:</span
+                  ><span id="totalAmountDue">₱0</span>
+                </div>
+              </div>
+
+              <form id="paymentForm" style="margin-top: 30px">
+                <h3 class="section-title">
+                  <i class="fas fa-credit-card"></i> Payment Details
+                </h3>
+                <div class="form-group">
+                  <label class="required">Payment Method</label>
+                  <div class="payment-methods">
+                    <div class="payment-method selected" data-method="cash">
+                      <i class="fas fa-money-bill-wave"></i><span>Cash</span>
+                    </div>
+                    <div class="payment-method" data-method="gcash">
+                      <i class="fas fa-mobile-alt"></i><span>GCash</span>
+                    </div>
+                  </div>
+                  <input type="hidden" id="paymentMethod" value="cash" />
+                </div>
+                <div class="form-group">
+                  <label class="required">Amount Paid</label>
+                  <input type="number" id="amountPaid" step="0.01" required />
+                </div>
+                <div class="form-group">
+                  <label>Email Address (For Receipt)</label>
+                  <input
+                    type="email"
+                    id="contactEmail"
+                    placeholder="owner@email.com"
+                  />
+                </div>
+                <div class="form-group">
+                  <label
+                    style="
+                      font-weight: 400;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                    "
+                  >
+                    <input
+                      type="checkbox"
+                      id="sendEmailReceipt"
+                      checked
+                      style="width: auto"
+                    />
+                    Send Email Receipt
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label>Notes</label>
+                  <input
+                    type="text"
+                    id="notes"
+                    placeholder="Optional notes..."
+                  />
+                </div>
+                <div class="form-actions">
+                  <button
+                    type="button"
+                    class="btn btn-outline"
+                    onclick="closePaymentModal()"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" class="btn btn-success">
+                    <i class="fas fa-check-circle"></i> Confirm Payment
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div class="payment-summary">
+              <h2 class="section-title">
+                <i class="fas fa-file-invoice"></i> Summary
+              </h2>
+              <div class="receipt-preview">
+                <div class="receipt-header">
+                  <h3>OFFICIAL RECEIPT</h3>
+                  <div style="font-size: 12px; color: var(--text-muted)">
+                    No: <span id="receiptNumber"></span>
+                  </div>
+                  <div style="font-size: 12px; color: var(--text-muted)">
+                    Date: <span id="receiptDate"></span>
+                  </div>
+                </div>
+                <div class="receipt-item">
+                  <span>Reference:</span><span id="receiptRefNo"></span>
+                </div>
+                <div class="receipt-item">
+                  <span>Plate No:</span><strong id="receiptPlate"></strong>
+                </div>
+                <div class="receipt-item">
+                  <span>Type:</span><span id="receiptType"></span>
+                </div>
+                <div class="receipt-item">
+                  <span>Owner:</span><span id="receiptOwner"></span>
+                </div>
+                <div class="receipt-item">
+                  <span>Contact:</span><span id="receiptContact"></span>
+                </div>
+                <div class="receipt-item">
+                  <span>Email:</span><span id="receiptEmail"></span>
+                </div>
+                <div
+                  class="receipt-item"
+                  style="
+                    border-top: 1px solid #eee;
+                    margin-top: 5px;
+                    padding-top: 5px;
+                  "
+                >
+                  <span>Balance Due:</span
+                  ><strong
+                    style="color: var(--primary)"
+                    id="receiptTotal"
+                  ></strong>
+                </div>
+                <div class="receipt-item">
+                  <span>Paid:</span><strong id="receiptAmount"></strong>
+                </div>
+                <div class="receipt-item">
+                  <span>Change:</span><strong id="receiptChange"></strong>
+                </div>
+              </div>
+              <div class="email-status" style="display: none"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="successModal" class="modal">
+      <div
+        class="modal-content"
+        style="
+          max-width: 400px;
+          text-align: center;
+          padding: 30px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        "
+      >
+        <div style="margin-bottom: 20px">
+          <i
+            class="fas fa-check-circle"
+            style="font-size: 50px; color: var(--success)"
+          ></i>
+        </div>
+        <h2 id="successTitle" style="margin-bottom: 10px; font-size: 22px">
+          Success
+        </h2>
+        <p
+          id="successMessage"
+          style="
+            color: var(--text-muted);
+            margin-bottom: 25px;
+            line-height: 1.5;
+          "
+        ></p>
+        <button
+          class="btn btn-primary"
+          style="width: 100%; justify-content: center"
+          onclick="closeSuccessModal()"
+        >
+          Okay
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyByzd88bcUAq0VdP0w6oB8W_b2AUgoIzXc",
+        authDomain: "vehicle-impound.firebaseapp.com",
+        projectId: "vehicle-impound",
+        storageBucket: "vehicle-impound.firebasestorage.app",
+        messagingSenderId: "69239563292",
+        appId: "1:69239563292:web:281912e8a38301c0feabd9",
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      const auth = firebase.auth();
+
+      let pendingPayments = [];
+      let filteredPayments = [];
+      let currentPayment = null;
+      let currentUser = null;
+      let violationsData = [];
+      let feesData = [];
+      let currentPage = 1;
+      const itemsPerPage = 8;
+      const pagination = document.getElementById("pagination");
+      const prevPageBtn = document.getElementById("prevPage");
+      const nextPageBtn = document.getElementById("nextPage");
+      const pageInfo = document.getElementById("pageInfo");
+
+      // Helper for clean currency parsing
+      function parseCurrency(value) {
+        if (typeof value === "number") return value;
+        if (!value) return 0;
+        // Remove P, ₱, commas, and whitespace
+        return parseFloat(value.toString().replace(/[P₱,\s]/g, "")) || 0;
+      }
+
+      function toggleFilterModal() {
+        const m = document.getElementById("filterModal");
+        m.classList.toggle("show");
+      }
+      window.addEventListener("click", (e) => {
+        if (!e.target.closest(".filter-wrapper")) {
+          document.getElementById("filterModal").classList.remove("show");
+        }
+      });
+
+      function applyDateFilter() {
+        const start = document.getElementById("filterStartDate").value;
+        const end = document.getElementById("filterEndDate").value;
+        if (!start && !end) {
+          filteredPayments = [...pendingPayments];
+          currentPage = 1;
+          renderPaymentsTable();
+          toggleFilterModal();
+          return;
+        }
+        filteredPayments = pendingPayments.filter((p) => {
+          try {
+            const pDate = new Date(p.dueDate).toISOString().split("T")[0];
+            const sDate = start ? start : "0000-00-00";
+            const eDate = end ? end : "9999-12-31";
+            return pDate >= sDate && pDate <= eDate;
+          } catch (e) {
+            return false;
+          }
+        });
+        currentPage = 1;
+        renderPaymentsTable();
+        toggleFilterModal();
+      }
+
+      function resetDateFilter() {
+        document.getElementById("filterStartDate").value = "";
+        document.getElementById("filterEndDate").value = "";
+        filteredPayments = [...pendingPayments];
+        currentPage = 1;
+        renderPaymentsTable();
+        toggleFilterModal();
+      }
+
+      // Success Modal Functions
+      function showSuccessModal(title, message) {
+        document.getElementById("successTitle").textContent = title;
+        document.getElementById("successMessage").textContent = message;
+        document.getElementById("successModal").style.display = "flex";
+      }
+
+      function closeSuccessModal() {
+        document.getElementById("successModal").style.display = "none";
+      }
+
+      async function sendPaymentEmail(email, name, receiptData, type = "full") {
+        const url = "https://api.brevo.com/v3/smtp/email";
+        const apiKey = "xkeysib-27741ece816d2baba91232c8b4d5051";
+        let htmlContent = "";
+
+        if (type === "partial") {
+          htmlContent = `
+            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h2 style="color: #f59e0b; text-align: center;">Partial Payment Receipt</h2>
+                <p>Hello <strong>${name}</strong>,</p>
+                <p>We received a partial payment for your violation. Please settle the remaining balance by the new due date.</p>
+                <hr style="border:0; border-top:1px solid #eee;">
+                <p><strong>Receipt No:</strong> ${receiptData.receiptNo}</p>
+                <p><strong>Date:</strong> ${receiptData.date}</p>
+                <p><strong>Plate:</strong> ${receiptData.plate}</p>
+                <p><strong>Amount Paid Now:</strong> ${receiptData.paid}</p>
+                <p><strong>Remaining Balance:</strong> ${receiptData.newBalance}</p>
+                <p><strong>Next Due Date (7 Working Days Extended):</strong> <strong style="color:red;">${receiptData.nextDueDate}</strong></p>
+                <hr style="border:0; border-top:1px solid #eee;">
+                <p style="text-align:center; font-size:12px; color:#666;">LTO Vehicle Impound Management System</p>
+            </div>`;
+        } else {
+          htmlContent = `
+            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h2 style="color: #2563eb; text-align: center;">Official Receipt</h2>
+                <p>Hello <strong>${name}</strong>,</p>
+                <p>Thank you for your payment. Details are below:</p>
+                <hr style="border:0; border-top:1px solid #eee;">
+                <p><strong>Receipt No:</strong> ${receiptData.receiptNo}</p>
+                <p><strong>Date:</strong> ${receiptData.date}</p>
+                <p><strong>Plate:</strong> ${receiptData.plate}</p>
+                <p><strong>Total Paid:</strong> ${receiptData.paid}</p>
+                <p><strong>Change:</strong> ${receiptData.change}</p>
+                <p style="color: green; font-weight: bold; text-align: center;">FULLY PAID</p>
+                <hr style="border:0; border-top:1px solid #eee;">
+                <p style="text-align:center; font-size:12px; color:#666;">LTO Vehicle Impound Management System</p>
+            </div>`;
+        }
+
+        const body = {
+          sender: {
+            name: "VIMS LTO Cashier",
+            email: "lawrencekier14@gmail.com",
+          },
+          to: [{ email: email, name: name }],
+          subject:
+            type === "partial"
+              ? `Partial Payment - ${receiptData.receiptNo}`
+              : `Payment Receipt - ${receiptData.receiptNo}`,
+          htmlContent: htmlContent,
+        };
+
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              accept: "application/json",
+              "api-key": apiKey,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify(body),
+          });
+          if (response.ok) {
+            showEmailStatus("success", "Receipt emailed successfully!");
+          } else {
+            const err = await response.json();
+            showEmailStatus(
+              "error",
+              "Email failed: " + (err.message || "Unknown error")
+            );
+          }
+        } catch (error) {
+          console.error("Email Error:", error);
+          showEmailStatus("error", "Network error sending email");
+        }
+      }
+
+      // UPDATED FUNCTION: Saves receipt to both receipts collection AND payments document
+      async function saveOfficialReceipt(
+        paymentType,
+        amountPaid,
+        newBalance,
+        method
+      ) {
+        const receiptNo = document.getElementById("receiptNumber").textContent;
+        const now = new Date();
+        const receiptData = {
+          receiptNumber: receiptNo,
+          referenceNo: currentPayment.referenceNo,
+          plateNumber: currentPayment.plateNumber,
+          vehicleType: currentPayment.vehicleType,
+          ownerName: currentPayment.ownerName,
+          paymentType: paymentType,
+          amountPaid: parseFloat(amountPaid),
+          previousBalance: parseFloat(currentPayment.balance),
+          remainingBalance: parseFloat(newBalance),
+          paymentMethod: method,
+          cashierId: currentUser.uid,
+          cashierName:
+            document.getElementById("userDisplayName").textContent || "Cashier",
+          timestamp: now.toISOString(),
+          dateFormatted: now.toLocaleDateString(),
+          timeFormatted: now.toLocaleTimeString(),
+          vehicleId: currentPayment.id,
+          paymentId: currentPayment.paymentId,
+        };
+
+        try {
+          // 1. Save receipt to separate receipts collection
+          const receiptRef = await db.collection("receipts").add(receiptData);
+
+          // 2. ALSO save receipt reference to the payments document
+          await db.collection("payments").doc(currentPayment.paymentId).update({
+            receiptId: receiptRef.id, // Reference to receipt document
+            receiptNumber: receiptNo, // Store receipt number
+            lastReceiptDate: now.toISOString(), // When receipt was generated
+            receiptGenerated: true, // Flag that receipt was created
+          });
+
+          console.log(
+            "Official Receipt saved to both collections:",
+            receiptData
+          );
+          return receiptRef.id; // Return receipt ID if needed
+        } catch (e) {
+          console.error("Error saving receipt:", e);
+          throw e; // Re-throw to handle in calling function
+        }
+      }
+
+      async function createXenditInvoice(
+        amount,
+        email,
+        referenceNo,
+        plateNumber
+      ) {
+        const xenditAPIKey =
+          "xnd_development_Ue2uvZgfhdomeVwDOgt0pWWaRk4hiiXgMe4h40U9t6c3wWu10g9Rj12Tmft";
+        const encodedKey = btoa(xenditAPIKey + ":");
+        const invoiceData = {
+          external_id: `${referenceNo}-${Date.now()}`,
+          amount: amount,
+          payer_email: email || "noemail@example.com",
+          description: `Payment for Vehicle ${plateNumber} - ${referenceNo}`,
+          invoice_duration: 86400,
+          success_redirect_url: window.location.href,
+          failure_redirect_url: window.location.href,
+          payment_methods: ["EWALLET"],
+          currency: "PHP",
+          items: [
+            {
+              name: `Vehicle Impound Payment - ${plateNumber}`,
+              quantity: 1,
+              price: amount,
+              category: "Vehicle Services",
+            },
+          ],
+        };
+        try {
+          const response = await fetch("https://api.xendit.co/v2/invoices", {
+            method: "POST",
+            headers: {
+              Authorization: `Basic ${encodedKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(invoiceData),
+          });
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || "Failed to create invoice");
+          }
+          return await response.json();
+        } catch (error) {
+          console.error("Xendit API Error:", error);
+          throw error;
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        auth.onAuthStateChanged(async (user) => {
+          if (user) {
+            currentUser = user;
+            await loadUserData(user.uid);
+            setupEventListeners();
+            await loadViolationsAndFees();
+            await fetchPendingPayments();
+          } else {
+            window.location.href = "../index.html";
+          }
+        });
+      });
+
+      async function loadViolationsAndFees() {
+        try {
+          const [vSnap, fSnap] = await Promise.all([
+            db.collection("violations").where("status", "==", "active").get(),
+            db.collection("fees").get(),
+          ]);
+          violationsData = [];
+          feesData = [];
+          vSnap.forEach((doc) =>
+            violationsData.push({ id: doc.id, ...doc.data() })
+          );
+          fSnap.forEach((doc) => feesData.push({ id: doc.id, ...doc.data() }));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      async function fetchPendingPayments() {
+        const tbody = document.getElementById("payments-table-body");
+        const refreshIcon = document.getElementById("refreshIcon");
+        if (refreshIcon) refreshIcon.classList.add("spinning");
+        tbody.innerHTML =
+          '<tr><td colspan="8" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+
+        try {
+          const vehiclesSnapshot = await db
+            .collection("impoundedVehicles")
+            .where("status", "==", "impounded")
+            .get();
+
+          if (vehiclesSnapshot.empty) {
+            tbody.innerHTML =
+              '<tr><td colspan="8" style="text-align:center; padding:40px;">No impounded vehicles found.</td></tr>';
+            updateStats();
+            if (refreshIcon) refreshIcon.classList.remove("spinning");
+            return;
+          }
+
+          const vehicleIds = [];
+          vehiclesSnapshot.forEach((doc) => {
+            vehicleIds.push(doc.id);
+          });
+
+          const paymentMap = {};
+          for (let i = 0; i < vehicleIds.length; i += 10) {
+            const batchIds = vehicleIds.slice(i, i + 10);
+            const paymentsSnapshot = await db
+              .collection("payments")
+              .where("vehicleId", "in", batchIds)
+              .get();
+            paymentsSnapshot.forEach((doc) => {
+              const data = doc.data();
+              if (data.vehicleId) {
+                paymentMap[data.vehicleId] = { id: doc.id, ...data };
+              }
+            });
+          }
+
+          pendingPayments = [];
+
+          // Get owner data from users collection for contact info
+          const ownersMap = {};
+          try {
+            const ownersSnapshot = await db
+              .collection("users")
+              .where("role", "==", "owner")
+              .get();
+            ownersSnapshot.forEach((doc) => {
+              const ownerData = doc.data();
+              if (ownerData.email) {
+                ownersMap[ownerData.email] = ownerData;
+              }
+            });
+          } catch (error) {
+            console.log("Could not fetch owner data:", error);
+          }
+
+          vehiclesSnapshot.forEach((doc) => {
+            try {
+              const vehicle = doc.data();
+              const payment = paymentMap[doc.id];
+
+              if (payment) {
+                let paymentStatus = payment.paymentStatus || "unpaid";
+                if (paymentStatus === "paid") return;
+
+                let dueDateStr = payment.dueDate;
+                if (!dueDateStr || !isValidDate(dueDateStr)) {
+                  const impoundDate = parseDate(vehicle.impoundDate);
+                  if (impoundDate) {
+                    const d = new Date(impoundDate);
+                    d.setDate(d.getDate() + 7);
+                    dueDateStr = d.toISOString();
+                  } else {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 7);
+                    dueDateStr = d.toISOString();
+                  }
+                }
+
+                let status = paymentStatus;
+                const dueDate = parseDate(dueDateStr);
+                if (dueDate && dueDate < new Date() && status !== "paid") {
+                  status = "overdue";
+                }
+
+                const calc = calculateTotalAmount(vehicle, payment);
+
+                let violationCodes = [];
+                if (payment.violationCode) {
+                  violationCodes = payment.violationCode
+                    .split(", ")
+                    .map((code) => code.trim());
+                } else if (vehicle.violations) {
+                  violationCodes = vehicle.violations;
+                }
+
+                const violations = violationCodes.map((code) => {
+                  const viol = violationsData.find((vd) => vd.code === code);
+                  return {
+                    violationCode: code,
+                    violationDescription: viol ? viol.description : "Violation",
+                    fineAmount: viol ? parseCurrency(viol.fineAmount) : 500,
+                  };
+                });
+
+                // Get reference number - prioritize referenceNumber field
+                const referenceNo =
+                  vehicle.referenceNumber ||
+                  payment.referenceNumber ||
+                  vehicle.refNumber ||
+                  payment.refNumber ||
+                  `#${doc.id.substring(0, 6).toUpperCase()}`;
+
+                // Get owner contact info - check multiple sources
+                let ownerContact =
+                  vehicle.ownerContact || vehicle.contactNumber || "N/A";
+                let ownerEmail = vehicle.ownerEmail || vehicle.email || "";
+
+                // Try to get contact from users collection if not in vehicle
+                if (
+                  (!ownerContact || ownerContact === "N/A") &&
+                  ownerEmail &&
+                  ownersMap[ownerEmail]
+                ) {
+                  const ownerData = ownersMap[ownerEmail];
+                  ownerContact =
+                    ownerData.contactNumber || ownerData.phone || "N/A";
+                }
+
+                let balance =
+                  calc.totalAmount - (parseFloat(payment.amountPaid) || 0);
+                balance = Math.max(0, balance);
+
+                pendingPayments.push({
+                  id: doc.id,
+                  paymentId: payment.id,
+                  referenceNo: referenceNo,
+                  plateNumber: vehicle.plateNumber || "N/A",
+                  vehicleType: vehicle.vehicleType || "N/A",
+                  ownerName: vehicle.ownerName || "N/A",
+                  ownerEmail: ownerEmail,
+                  ownerContact: ownerContact,
+                  totalAmount: calc.totalAmount,
+                  amountPaid: parseFloat(payment.amountPaid) || 0,
+                  balance: balance,
+                  dueDate: dueDateStr,
+                  status: status,
+                  paymentStatus: paymentStatus,
+                  fees: calc.feesBreakdown,
+                  violations: violations,
+                  vehicleData: vehicle,
+                  daysImpounded: calc.daysImpounded,
+                  vehicleModel: vehicle.vehicleModel || "N/A",
+                  vehicleColor: vehicle.vehicleColor || "N/A",
+                  ownerAddress: vehicle.ownerAddress || "N/A",
+                });
+              }
+            } catch (error) {
+              console.error(`Error processing vehicle ${doc.id}:`, error);
+            }
+          });
+
+          filteredPayments = [...pendingPayments];
+          renderPaymentsTable();
+          updateStats();
+        } catch (error) {
+          console.error("Error fetching pending payments:", error);
+          tbody.innerHTML =
+            '<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--danger)">Error loading data: ' +
+            error.message +
+            "</td></tr>";
+        } finally {
+          if (refreshIcon) refreshIcon.classList.remove("spinning");
+        }
+      }
+
+      function parseDate(dateString) {
+        if (!dateString) return null;
+        if (dateString.toDate && typeof dateString.toDate === "function") {
+          return dateString.toDate();
+        }
+        const date = new Date(dateString);
+        return isNaN(date.getTime()) ? null : date;
+      }
+
+      function isValidDate(dateString) {
+        const date = parseDate(dateString);
+        return date !== null && !isNaN(date.getTime());
+      }
+
+      function calculateTotalAmount(vehicle, payment) {
+        let total = 0;
+        const breakdown = {
+          violation: 0,
+          storage: 0,
+          towing: 0,
+          documentation: 0,
+        };
+
+        // --- UPDATED VIOLATION CALCULATION ---
+        let codesToProcess = [];
+
+        // 1. Try to get codes from payment record (snapshot)
+        if (payment && payment.violationCode) {
+          codesToProcess = payment.violationCode
+            .split(",")
+            .map((c) => c.trim());
+        }
+        // 2. Fallback to vehicle record (active violations) if payment record is empty
+        else if (vehicle && vehicle.violations) {
+          if (Array.isArray(vehicle.violations)) {
+            codesToProcess = vehicle.violations;
+          } else if (typeof vehicle.violations === "string") {
+            codesToProcess = vehicle.violations.split(",").map((c) => c.trim());
+          }
+        }
+
+        codesToProcess.forEach((code) => {
+          const v = violationsData.find((x) => x.code === code);
+          if (v) {
+            breakdown.violation += parseCurrency(v.fineAmount);
+          }
+        });
+        total += breakdown.violation;
+
+        // Storage fee
+        const days = calculateDaysImpounded(vehicle.impoundDate);
+        const storageFee = feesData.find((f) => f.type === "Storage Fee");
+        const dailyStorage = storageFee
+          ? parseCurrency(storageFee.amount)
+          : 200;
+        breakdown.storage = dailyStorage * days;
+        total += breakdown.storage;
+
+        // Towing fee
+        const towingFee = feesData.find((f) => f.type === "Towing Fee");
+        const towAmount = towingFee ? parseCurrency(towingFee.amount) : 1500;
+        breakdown.towing = towAmount;
+        total += breakdown.towing;
+
+        // Documentation fee
+        const docFee = feesData.find((f) => f.type === "Documentation Fee");
+        const docAmount = docFee ? parseCurrency(docFee.amount) : 300;
+        breakdown.documentation = docAmount;
+        total += breakdown.documentation;
+
+        return {
+          totalAmount: total,
+          feesBreakdown: breakdown,
+          daysImpounded: days,
+        };
+      }
+
+      function calculateDaysImpounded(dateStr) {
+        try {
+          const impound = parseDate(dateStr);
+          if (!impound) return 1;
+          const now = new Date();
+          const diffTime = Math.abs(now - impound);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          return Math.max(1, diffDays);
+        } catch (error) {
+          console.error("Error calculating days impounded:", error);
+          return 1;
+        }
+      }
+
+      function renderPaymentsTable() {
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = filteredPayments.slice(start, end);
+        const tbody = document.getElementById("payments-table-body");
+        const validList = pageData.filter(
+          (p) =>
+            p && p.plateNumber && p.ownerName && typeof p.balance === "number"
+        );
+
+        if (validList.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:50px; color:#64748b;">No pending payments found.</td></tr>`;
+          pagination.style.display = "none";
+          return;
+        }
+
+        tbody.innerHTML = validList
+          .map((p) => {
+            let statusClass = "status-pending";
+            let statusText = "Unpaid";
+            if (p.status === "overdue") {
+              statusClass = "status-overdue";
+              statusText = "Overdue";
+            } else if (p.status === "partial") {
+              statusClass = "status-partial";
+              statusText = "Partial";
+            }
+
+            let dueDateFormatted = "N/A";
+            try {
+              const dueDate = parseDate(p.dueDate);
+              if (dueDate) {
+                dueDateFormatted = dueDate.toLocaleDateString();
+              }
+            } catch (e) {
+              console.error("Error formatting date:", e);
+            }
+
+            return `
+                <tr style="animation: fadeIn 0.3s ease-out;">
+                    <td style="font-family:monospace; color:var(--primary); font-weight:600">${
+                      p.referenceNo
+                    }</td>
+                    <td><strong>${p.plateNumber}</strong></td>
+                    <td>${p.vehicleType}</td>
+                    <td>${p.ownerName}</td>
+                    <td class="amount">₱${p.balance.toLocaleString()}</td>
+                    <td>${dueDateFormatted}</td>
+                    <td><span class="status ${statusClass}">${statusText}</span></td>
+                    <td class="action-cell">
+                        <div class="action-btn-wrapper" onclick="openPaymentModal('${
+                          p.id
+                        }')" title="Process Payment">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                    </td>
+                </tr>`;
+          })
+          .join("");
+        updatePagination();
+      }
+
+      function updatePagination() {
+        const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+        if (totalPages > 1) {
+          pagination.style.display = "flex";
+          pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+          prevPageBtn.disabled = currentPage === 1;
+          nextPageBtn.disabled = currentPage === totalPages;
+        } else {
+          pagination.style.display = "none";
+        }
+      }
+
+      prevPageBtn.addEventListener("click", () => changePage(-1));
+      nextPageBtn.addEventListener("click", () => changePage(1));
+
+      function changePage(dir) {
+        const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+        currentPage += dir;
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        renderPaymentsTable();
+      }
+
+      function openPaymentModal(id) {
+        currentPayment = pendingPayments.find((p) => p.id === id);
+        if (!currentPayment) return;
+        document.getElementById("modalRefNo").textContent =
+          currentPayment.referenceNo;
+        document.getElementById("detailRefNo").textContent =
+          currentPayment.referenceNo;
+        document.getElementById("detailPlate").textContent =
+          currentPayment.plateNumber;
+        document.getElementById("detailType").textContent =
+          currentPayment.vehicleType;
+        document.getElementById("detailOwner").textContent =
+          currentPayment.ownerName;
+        document.getElementById("detailContact").textContent =
+          currentPayment.ownerContact || "Not provided";
+        document.getElementById("detailEmail").textContent =
+          currentPayment.ownerEmail || "Not provided";
+
+        try {
+          const impoundDate = parseDate(currentPayment.vehicleData.impoundDate);
+          document.getElementById("detailImpoundDate").textContent = impoundDate
+            ? impoundDate.toLocaleDateString()
+            : "N/A";
+        } catch (e) {
+          document.getElementById("detailImpoundDate").textContent = "N/A";
+        }
+        document.getElementById("detailDays").textContent =
+          currentPayment.daysImpounded + " days";
+        document.getElementById("storageDays").textContent =
+          currentPayment.daysImpounded;
+        document.getElementById("totalViolations").textContent =
+          currentPayment.violations.length;
+
+        const vList = document.getElementById("violationsList");
+        vList.innerHTML = "";
+        currentPayment.violations.forEach((v) => {
+          vList.innerHTML += `
+                <div class="violation-item">
+                    <span class="violation-code">${v.violationCode}</span>
+                    <span class="violation-fine">₱${v.fineAmount.toLocaleString()}</span>
+                </div>`;
+        });
+
+        document.getElementById(
+          "feeViolation"
+        ).textContent = `₱${currentPayment.fees.violation.toLocaleString()}`;
+        document.getElementById(
+          "feeStorage"
+        ).textContent = `₱${currentPayment.fees.storage.toLocaleString()}`;
+        document.getElementById(
+          "feeTowing"
+        ).textContent = `₱${currentPayment.fees.towing.toLocaleString()}`;
+        document.getElementById(
+          "feeDocumentation"
+        ).textContent = `₱${currentPayment.fees.documentation.toLocaleString()}`;
+        document.getElementById(
+          "totalAmountDue"
+        ).textContent = `₱${currentPayment.balance.toLocaleString()}`;
+        document.getElementById("contactEmail").value =
+          currentPayment.ownerEmail || "";
+        document.getElementById("amountPaid").value = currentPayment.balance;
+
+        const now = new Date();
+        document.getElementById(
+          "receiptNumber"
+        ).textContent = `RCP-${now.getFullYear()}-${Math.random()
+          .toString()
+          .substr(2, 4)}`;
+        document.getElementById("receiptDate").textContent =
+          now.toLocaleDateString();
+        document.getElementById("receiptRefNo").textContent =
+          currentPayment.referenceNo;
+        document.getElementById("receiptPlate").textContent =
+          currentPayment.plateNumber;
+        document.getElementById("receiptType").textContent =
+          currentPayment.vehicleType;
+        document.getElementById("receiptOwner").textContent =
+          currentPayment.ownerName;
+        document.getElementById("receiptContact").textContent =
+          currentPayment.ownerContact || "N/A";
+        document.getElementById("receiptEmail").textContent =
+          currentPayment.ownerEmail || "N/A";
+        document.getElementById(
+          "receiptTotal"
+        ).textContent = `₱${currentPayment.balance.toLocaleString()}`;
+
+        updateReceiptCalc();
+        document.getElementById("paymentModal").style.display = "flex";
+        document.querySelector(".email-status").style.display = "none";
+      }
+
+      function closePaymentModal() {
+        document.getElementById("paymentModal").style.display = "none";
+        currentPayment = null;
+      }
+
+      function updateReceiptCalc() {
+        const paid =
+          parseFloat(document.getElementById("amountPaid").value) || 0;
+        const total = currentPayment ? currentPayment.balance : 0;
+        const change = Math.max(0, paid - total);
+        document.getElementById(
+          "receiptAmount"
+        ).textContent = `₱${paid.toLocaleString()}`;
+        document.getElementById(
+          "receiptChange"
+        ).textContent = `₱${change.toLocaleString()}`;
+      }
+
+      document
+        .getElementById("amountPaid")
+        .addEventListener("input", updateReceiptCalc);
+
+      function showEmailStatus(type, msg) {
+        const el = document.querySelector(".email-status");
+        el.style.display = "flex";
+        el.className = `email-status ${type}`;
+        el.innerHTML = `<i class="fas fa-${
+          type === "success" ? "check" : "exclamation"
+        }-circle"></i> ${msg}`;
+      }
+
+      document
+        .getElementById("paymentForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const btn = e.target.querySelector('button[type="submit"]');
+          btn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Processing...';
+          btn.disabled = true;
+
+          try {
+            const amountInput = parseFloat(
+              document.getElementById("amountPaid").value
+            );
+            const method = document.getElementById("paymentMethod").value;
+            const email = document.getElementById("contactEmail").value;
+            const sendEmail =
+              document.getElementById("sendEmailReceipt").checked;
+            const currentBalance = currentPayment.balance;
+            const receiptNo =
+              document.getElementById("receiptNumber").textContent;
+
+            if (method === "gcash") {
+              if (!email) {
+                alert("Email address is required for GCash payment.");
+                btn.innerHTML =
+                  '<i class="fas fa-check-circle"></i> Confirm Payment';
+                btn.disabled = false;
+                return;
+              }
+              try {
+                const invoice = await createXenditInvoice(
+                  amountInput,
+                  email,
+                  currentPayment.referenceNo,
+                  currentPayment.plateNumber
+                );
+                await db.collection("pendingXenditPayments").add({
+                  invoiceId: invoice.id,
+                  invoiceUrl: invoice.invoice_url,
+                  vehicleId: currentPayment.id,
+                  paymentId: currentPayment.paymentId,
+                  amount: amountInput,
+                  balance: currentBalance - amountInput,
+                  method: "gcash",
+                  status: "pending",
+                  createdAt: new Date().toISOString(),
+                  externalId: invoice.external_id,
+                  plateNumber: currentPayment.plateNumber,
+                  ownerName: currentPayment.ownerName,
+                  ownerEmail: email,
+                });
+                await db.collection("activityLogs").add({
+                  action: "gcash_payment_initiated",
+                  details: `GCash payment of ₱${amountInput} initiated for ${currentPayment.plateNumber}. Invoice ID: ${invoice.id}`,
+                  fullName:
+                    document.getElementById("userDisplayName").textContent,
+                  timestamp: new Date().toISOString(),
+                  userId: currentUser.uid,
+                  vehicleId: currentPayment.id,
+                });
+                window.open(invoice.invoice_url, "_blank");
+                showSuccessModal(
+                  "Redirecting",
+                  "GCash payment link opened. Please complete the payment in the new tab."
+                );
+                closePaymentModal();
+              } catch (error) {
+                console.error("GCash payment error:", error);
+                alert("Error creating GCash payment: " + error.message);
+              }
+              btn.innerHTML =
+                '<i class="fas fa-check-circle"></i> Confirm Payment';
+              btn.disabled = false;
+              return;
+            }
+
+            if (amountInput < currentBalance) {
+              // Partial Payment
+              const newBalance = currentBalance - amountInput;
+              const accumulatedPaid =
+                (currentPayment.amountPaid || 0) + amountInput;
+              const nextDueDate = new Date();
+              nextDueDate.setDate(nextDueDate.getDate() + 7);
+
+              await db
+                .collection("payments")
+                .doc(currentPayment.paymentId)
+                .update({
+                  paymentStatus: "partial",
+                  amountPaid: accumulatedPaid,
+                  balance: newBalance,
+                  cashierId: currentUser.uid,
+                  lastPaymentDate: new Date().toISOString(),
+                  dueDate: nextDueDate.toISOString(),
+                });
+              await db.collection("activityLogs").add({
+                action: "payment_partial",
+                details: `Partial payment of ₱${amountInput} received for ${currentPayment.plateNumber}. New Bal: ₱${newBalance}`,
+                fullName:
+                  document.getElementById("userDisplayName").textContent,
+                timestamp: new Date().toISOString(),
+                userId: currentUser.uid,
+                vehicleId: currentPayment.id,
+              });
+
+              // Save receipt to both collections
+              const receiptId = await saveOfficialReceipt(
+                "Partial",
+                amountInput,
+                newBalance,
+                method
+              );
+
+              if (sendEmail && email) {
+                const rData = {
+                  receiptNo: receiptNo,
+                  date: new Date().toLocaleDateString(),
+                  plate: currentPayment.plateNumber,
+                  paid: `₱${amountInput.toLocaleString()}`,
+                  newBalance: `₱${newBalance.toLocaleString()}`,
+                  nextDueDate: nextDueDate.toLocaleDateString(),
+                };
+                await sendPaymentEmail(
+                  email,
+                  currentPayment.ownerName,
+                  rData,
+                  "partial"
+                );
+              }
+              // Replaced Alert with Modal
+              showSuccessModal(
+                "Partial Payment Recorded",
+                `Payment processed successfully! Receipt #${receiptNo} has been saved. Balance updated and Due Date extended.`
+              );
+            } else {
+              // Full Payment
+              await db
+                .collection("payments")
+                .doc(currentPayment.paymentId)
+                .update({
+                  paymentStatus: "paid",
+                  amountPaid: amountInput,
+                  balance: 0,
+                  cashierId: currentUser.uid,
+                  paymentDate: new Date().toISOString(),
+                });
+              await db
+                .collection("impoundedVehicles")
+                .doc(currentPayment.id)
+                .update({ status: "paid" });
+              await db.collection("activityLogs").add({
+                action: "payment_processed",
+                details: `Full payment of ₱${amountInput} received for ${currentPayment.plateNumber}. Method: ${method}`,
+                fullName:
+                  document.getElementById("userDisplayName").textContent,
+                timestamp: new Date().toISOString(),
+                userId: currentUser.uid,
+                vehicleId: currentPayment.id,
+              });
+
+              // Save receipt to both collections
+              const receiptId = await saveOfficialReceipt(
+                "Full",
+                amountInput,
+                0,
+                method
+              );
+
+              if (sendEmail && email) {
+                const rData = {
+                  receiptNo: receiptNo,
+                  date: new Date().toLocaleDateString(),
+                  plate: currentPayment.plateNumber,
+                  total: `₱${currentPayment.totalAmount.toLocaleString()}`,
+                  paid: `₱${amountInput.toLocaleString()}`,
+                  change: document.getElementById("receiptChange").textContent,
+                };
+                await sendPaymentEmail(
+                  email,
+                  currentPayment.ownerName,
+                  rData,
+                  "full"
+                );
+              }
+              // Replaced Alert with Modal
+              showSuccessModal(
+                "Full Payment Successful",
+                `Vehicle has been marked as paid and released. Receipt #${receiptNo} has been saved.`
+              );
+            }
+
+            closePaymentModal();
+            fetchPendingPayments();
+          } catch (err) {
+            console.error("Payment processing error:", err);
+            alert("Error processing payment: " + err.message);
+          } finally {
+            btn.innerHTML =
+              '<i class="fas fa-check-circle"></i> Confirm Payment';
+            btn.disabled = false;
+          }
+        });
+
+      document
+        .getElementById("search-input")
+        .addEventListener("input", function () {
+          const term = this.value.toLowerCase().trim();
+          if (term === "") {
+            filteredPayments = [...pendingPayments];
+            currentPage = 1;
+            renderPaymentsTable();
+            return;
+          }
+          filteredPayments = pendingPayments.filter(
+            (p) =>
+              p.referenceNo.toLowerCase().includes(term) ||
+              p.plateNumber.toLowerCase().includes(term) ||
+              p.ownerName.toLowerCase().includes(term)
+          );
+          currentPage = 1;
+          renderPaymentsTable();
+        });
+
+      document.querySelectorAll(".payment-method").forEach((m) => {
+        m.addEventListener("click", () => {
+          document
+            .querySelectorAll(".payment-method")
+            .forEach((i) => i.classList.remove("selected"));
+          m.classList.add("selected");
+          document.getElementById("paymentMethod").value = m.dataset.method;
+        });
+      });
+
+      async function loadUserData(uid) {
+        const doc = await db.collection("users").doc(uid).get();
+        if (doc.exists) {
+          const d = doc.data();
+          document.getElementById("userDisplayName").textContent =
+            d.fullName || "Cashier";
+          if (d.fullName)
+            document.getElementById("userAvatar").textContent = d.fullName
+              .substring(0, 2)
+              .toUpperCase();
+        }
+      }
+
+      function updateStats() {
+        document.getElementById("total-pending").textContent =
+          pendingPayments.length;
+        const total = pendingPayments.reduce((s, p) => s + p.balance, 0);
+        document.getElementById(
+          "total-amount"
+        ).textContent = `₱${total.toLocaleString()}`;
+        const overdue = pendingPayments.filter(
+          (p) => p.status === "overdue"
+        ).length;
+        document.getElementById("overdue-payments").textContent = overdue;
+        const today = new Date();
+        const nextWeek = new Date();
+        nextWeek.setDate(today.getDate() + 7);
+        const dueThisWeek = pendingPayments.filter((p) => {
+          try {
+            const dueDate = parseDate(p.dueDate);
+            return dueDate && dueDate >= today && dueDate <= nextWeek;
+          } catch (e) {
+            return false;
+          }
+        }).length;
+        document.getElementById("due-this-week").textContent = dueThisWeek;
+      }
+
+      // Add function to update owner information
+      async function updateOwnerInformation(vehicleId, ownerData) {
+        try {
+          await db
+            .collection("impoundedVehicles")
+            .doc(vehicleId)
+            .update({
+              ownerName: ownerData.name || "",
+              ownerContact: ownerData.contact || "",
+              ownerEmail: ownerData.email || "",
+              updatedAt: new Date().toISOString(),
+            });
+
+          console.log("Owner information updated for vehicle:", vehicleId);
+          return true;
+        } catch (error) {
+          console.error("Error updating owner information:", error);
+          return false;
+        }
+      }
+
+      function setupEventListeners() {
+        document.querySelector(".close").onclick = closePaymentModal;
+        const paymentModal = document.getElementById("paymentModal");
+        window.onclick = (e) => {
+          if (e.target == paymentModal) closePaymentModal();
+          if (e.target == document.getElementById("successModal"))
+            closeSuccessModal();
+          if (!e.target.closest(".user-menu"))
+            document.getElementById("logoutDropdown").style.display = "none";
+        };
+      }
+
+      function toggleLogoutDropdown() {
+        const d = document.getElementById("logoutDropdown");
+        d.style.display = d.style.display === "block" ? "none" : "block";
+      }
+
+      async function logout() {
+        await auth.signOut();
+        window.location.href = "../index.html";
+      }
+    </script>
+  </body>
+</html>

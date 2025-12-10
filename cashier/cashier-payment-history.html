@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment History - VIMS</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <style>
+      :root {
+        /* VIMS Modern Palette */
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --sidebar-bg: #1e293b;
+        --bg-body: #f1f5f9;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --success: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --border: #e2e8f0;
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --radius: 12px;
+        --anim-speed: 0.25s;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+      }
+
+      body {
+        background-color: var(--bg-body);
+        display: flex;
+        min-height: 100vh;
+        color: var(--text-main);
+        overflow-x: hidden;
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 260px;
+        background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+        color: white;
+        height: 100vh;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+        transition: var(--anim-speed);
+      }
+      .sidebar-header {
+        padding: 30px 24px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: transparent;
+        flex-shrink: 0;
+      }
+      .logo svg {
+        width: 40px;
+        height: 40px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+      }
+      .sidebar-header h2 {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+      .sidebar-menu {
+        padding: 20px 15px;
+        flex: 1;
+        overflow-y: auto;
+      }
+      .sidebar-menu ul {
+        list-style: none;
+      }
+      .sidebar-menu li {
+        margin-bottom: 5px;
+      }
+      .sidebar-menu a {
+        display: flex;
+        align-items: center;
+        padding: 14px 20px;
+        color: #94a3b8;
+        text-decoration: none;
+        transition: var(--anim-speed);
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 14px;
+        border-left: none;
+      }
+      .sidebar-menu a:hover,
+      .sidebar-menu a.active {
+        background-color: rgba(255, 255, 255, 0.08);
+        color: white;
+      }
+      .sidebar-menu a.active {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      }
+      .sidebar-menu i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+        font-size: 16px;
+      }
+      .sidebar-logout {
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.2);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        flex-shrink: 0;
+      }
+      .sidebar-logout ul {
+        list-style: none;
+      }
+      .sidebar-logout a {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        color: #fca5a5;
+        text-decoration: none;
+        transition: 0.3s;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+      .sidebar-logout a:hover {
+        background-color: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+      }
+      .sidebar-logout i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+      }
+
+      /* Main Content */
+      .main-content {
+        flex: 1;
+        margin-left: 260px;
+        padding: 30px 40px;
+        transition: var(--anim-speed);
+      }
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 35px;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+      .page-title h1 {
+        font-size: 26px;
+        color: var(--text-main);
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 5px;
+      }
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      /* User Menu */
+      .user-menu {
+        display: flex;
+        align-items: center;
+        position: relative;
+        padding: 6px 8px 6px 16px;
+        border-radius: 50px;
+        background: white;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .user-menu:hover {
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+      }
+      .user-info {
+        text-align: right;
+        margin-right: 12px;
+      }
+      .user-name {
+        font-weight: 700;
+        color: var(--text-main);
+        font-size: 14px;
+      }
+      .user-role {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .user-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+      }
+
+      /* Dropdown */
+      .logout-dropdown {
+        position: absolute;
+        top: 60px;
+        right: 0;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 10px;
+        min-width: 200px;
+        display: none;
+        z-index: 1000;
+        border: 1px solid var(--border);
+        animation: fadeIn 0.2s ease-out;
+      }
+      .logout-dropdown.show {
+        display: block;
+      }
+      .logout-item {
+        padding: 12px 15px;
+        display: flex;
+        align-items: center;
+        color: var(--text-main);
+        text-decoration: none;
+        transition: 0.2s;
+        cursor: pointer;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        font-size: 14px;
+        border-radius: 8px;
+      }
+      .logout-item:hover {
+        background-color: var(--bg-body);
+        color: var(--primary);
+      }
+      .logout-item i {
+        margin-right: 10px;
+        width: 16px;
+      }
+
+      /* Stats */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 24px;
+        margin-bottom: 35px;
+        animation: fadeIn 0.4s ease-out;
+      }
+      .stat-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        padding: 25px;
+        transition: 0.3s;
+        border: 1px solid var(--border);
+        position: relative;
+        overflow: hidden;
+      }
+      .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+      }
+      .stat-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 5px;
+        letter-spacing: -1px;
+      }
+      .stat-label {
+        font-size: 13px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Table Area */
+      .data-table {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        margin-bottom: 30px;
+        border: 1px solid var(--border);
+        animation: fadeIn 0.5s ease-out;
+      }
+
+      /* Header with Search and Actions */
+      .table-header {
+        padding: 20px 25px;
+        background: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+      .header-left {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex: 1;
+      }
+      .header-right {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      /* Search */
+      .search-container {
+        display: flex;
+        align-items: center;
+        position: relative;
+        width: 100%;
+        max-width: 350px;
+      }
+      .search-container input {
+        width: 100%;
+        padding: 10px 15px 10px 45px; /* Increased padding */
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 14px;
+        background: #f8fafc;
+        transition: 0.2s;
+        outline: none;
+      }
+      .search-container input:focus {
+        border-color: var(--primary);
+        background: white;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .search-container i {
+        position: absolute;
+        left: 14px;
+        color: var(--text-muted);
+        font-size: 14px;
+        pointer-events: none;
+      }
+
+      /* Filter Wrapper */
+      .filter-wrapper {
+        position: relative;
+      }
+
+      /* Buttons */
+      .btn {
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+      }
+      .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+      }
+      .btn-outline {
+        background: white;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        box-shadow: var(--shadow-sm);
+      }
+      .btn-outline:hover,
+      .btn-outline.active {
+        background: var(--bg-body);
+        color: var(--text-main);
+        border-color: var(--text-main);
+      }
+      .btn-success {
+        background: var(--success);
+        color: white;
+      }
+      .btn-success:hover {
+        background: #059669;
+      }
+
+      /* Refresh Icon */
+      .btn-icon {
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        justify-content: center;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: white;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+      }
+      .btn-icon:hover {
+        background: var(--bg-body);
+        color: var(--primary);
+        border-color: var(--primary);
+      }
+      .btn-icon i.spinning {
+        animation: spin 0.8s linear infinite;
+      }
+
+      /* Filter Modal */
+      .filter-modal {
+        display: none;
+        position: absolute;
+        top: 110%;
+        right: 0;
+        width: 280px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        border: 1px solid var(--border);
+        padding: 20px;
+        z-index: 100;
+        animation: fadeIn 0.2s ease-out;
+      }
+      .filter-modal.show {
+        display: block;
+      }
+      .filter-group {
+        margin-bottom: 15px;
+      }
+      .filter-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 5px;
+        text-transform: uppercase;
+      }
+      .filter-group input,
+      .filter-group select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 14px;
+        outline: none;
+      }
+      .filter-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+      }
+      .btn-block {
+        flex: 1;
+        justify-content: center;
+      }
+
+      /* Table Styling */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        white-space: nowrap;
+      }
+      th {
+        background: #f8fafc;
+        padding: 16px 24px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--border);
+        letter-spacing: 0.5px;
+      }
+      td {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-main);
+        font-size: 14px;
+        vertical-align: middle;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      tr:hover td {
+        background-color: #f8fafc;
+        transition: background 0.2s;
+      }
+
+      .status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-block;
+      }
+      .status-paid {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #86efac;
+      }
+      .status-partial {
+        background: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+      }
+      .amount {
+        font-weight: 700;
+        color: var(--text-main);
+        font-family: monospace;
+        font-size: 15px;
+      }
+
+      /* Action Buttons */
+      .action-cell {
+        display: flex;
+        gap: 8px;
+      }
+      .action-btn-wrapper {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s;
+        background: #f1f5f9;
+        border: 1px solid transparent;
+      }
+      .action-btn-wrapper i {
+        color: var(--sidebar-bg);
+        font-size: 14px;
+      }
+      .action-btn-wrapper:hover {
+        background: var(--sidebar-bg);
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .action-btn-wrapper:hover i {
+        color: white;
+      }
+
+      /* --- Pagination (EXACTLY like first code) --- */
+      .pagination {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        padding: 15px 25px;
+        border-top: 1px solid var(--border);
+        background: white;
+      }
+      .page-btn {
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--border);
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        transition: 0.2s;
+      }
+      .page-btn:hover:not(:disabled) {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-soft);
+      }
+      .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      #pageInfo {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin: 0 10px;
+      }
+
+      /* Modal Styling - Matches new design */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(4px);
+        animation: fadeIn 0.2s;
+      }
+      .modal-content {
+        background-color: white;
+        border-radius: 16px;
+        width: 95%;
+        max-width: 800px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+      }
+      .modal-header {
+        padding: 20px 30px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: white;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .modal-header h2 {
+        margin: 0;
+        font-size: 18px;
+        color: var(--text-main);
+        font-weight: 700;
+      }
+      .close {
+        background: #f1f5f9;
+        border: none;
+        color: var(--text-muted);
+        font-size: 20px;
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+      }
+      .close:hover {
+        background: #e2e8f0;
+        color: var(--danger);
+      }
+      .modal-body {
+        padding: 30px;
+      }
+
+      /* Receipt & Summary inside Modal */
+      .receipt-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .official-receipt {
+        border: 1px solid var(--border);
+        padding: 30px;
+        border-radius: 8px;
+        background: white;
+      }
+      .receipt-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid var(--border);
+      }
+      .receipt-title {
+        color: var(--primary);
+        font-weight: 800;
+        font-size: 18px;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+      }
+      .receipt-subtitle {
+        color: var(--text-muted);
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+      .receipt-number {
+        margin-top: 10px;
+        font-family: monospace;
+        background: #f1f5f9;
+        padding: 5px 10px;
+        border-radius: 4px;
+        display: inline-block;
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .receipt-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+      }
+      .section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--primary);
+        text-transform: uppercase;
+        margin-bottom: 10px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 5px;
+      }
+      .receipt-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 13px;
+      }
+      .receipt-label {
+        color: var(--text-muted);
+      }
+      .receipt-value {
+        font-weight: 600;
+        color: var(--text-main);
+      }
+
+      .fee-breakdown {
+        margin-top: 20px;
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid var(--border);
+      }
+      .fee-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        font-size: 13px;
+      }
+      .total-amount {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 10px;
+        margin-top: 10px;
+        border-top: 2px solid var(--primary);
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .sms-notification {
+        background-color: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+        text-align: center;
+        font-size: 13px;
+        display: none; /* Hidden by default */
+      }
+
+      /* Print Media Query */
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .official-receipt,
+        .official-receipt * {
+          visibility: visible;
+        }
+        .official-receipt {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          border: none;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-content {
+          margin-left: 0;
+          padding: 20px;
+        }
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+        .header-left {
+          flex-direction: column;
+          width: 100%;
+        }
+        .search-container {
+          max-width: 100%;
+        }
+        .receipt-body {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+        .filter-modal {
+          width: 100%;
+        }
+      }
+      .text p {
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <svg viewBox="0 0 512 512" width="40" height="40" fill="white">
+            <path
+              d="M112,112c0-26.5,21.5-48,48-48h76.3c15.2-22,40.7-36.5,69.7-36.5s54.5,14.5,69.7,36.5H416c26.5,0,48,21.5,48,48v64H112V112z M306,83.5c-11.2,0-20.7,7.8-23.2,18.5h46.4C326.7,91.3,317.2,83.5,306,83.5z"
+            />
+            <path
+              d="M47.5,192C21.3,192,0,213.3,0,239.5v161C0,426.7,21.3,448,47.5,448h17.1c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h161.2c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h12.1c26.2,0,47.5-21.3,47.5-47.5v-161C560,213.3,538.7,192,512.5,192H47.5z M133,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S148.1,456.2,133,456.2z M431,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S446.1,456.2,431,456.2z"
+            />
+          </svg>
+        </div>
+        <div class="text">
+          <h2>VIMS</h2>
+          <p>Payments Management</p>
+        </div>
+      </div>
+      <div class="sidebar-menu">
+        <ul>
+          <li>
+            <a href="cashier-dashboard.html"
+              ><i class="fas fa-tachometer-alt"></i> Dashboard</a
+            >
+          </li>
+          <li>
+            <a href="cashier-pending-payments.html"
+              ><i class="fas fa-clock"></i> Pending Payments</a
+            >
+          </li>
+          <li>
+            <a href="cashier-payment-history.html" class="active"
+              ><i class="fas fa-history"></i> Transaction History</a
+            >
+          </li>
+        </ul>
+      </div>
+      <div class="sidebar-logout">
+        <ul>
+          <li>
+            <a href="#" onclick="logout()"
+              ><i class="fas fa-sign-out-alt"></i> Logout</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="top-bar">
+        <div class="page-title">
+          <h1>Payment History</h1>
+          <p>View and manage payment transaction history.</p>
+        </div>
+        <div class="user-menu" onclick="toggleLogoutDropdown()">
+          <div class="user-info">
+            <div class="user-name" id="userDisplayName">Loading...</div>
+            <div class="user-role" id="userRole">Cashier</div>
+          </div>
+          <div class="user-avatar" id="userAvatar">CM</div>
+          <div class="logout-dropdown" id="logoutDropdown">
+            <button class="logout-item">
+              <i class="fas fa-user"></i> My Profile
+            </button>
+            <button
+              class="logout-item"
+              onclick="logout()"
+              style="color: var(--danger)"
+            >
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="todayCollection">₱0</div>
+          <div class="stat-label">Today's Collection</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="todayTransactions">0</div>
+          <div class="stat-label">Transactions Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="monthlyCollection">₱0</div>
+          <div class="stat-label">Monthly Collection</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalTransactions">0</div>
+          <div class="stat-label">Total Transactions</div>
+        </div>
+      </div>
+
+      <div class="data-table">
+        <div class="table-header">
+          <div class="header-left">
+            <div class="search-container">
+              <i class="fas fa-search"></i>
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search Receipt or Plate..."
+                oninput="applyFilters()"
+              />
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="filter-wrapper">
+              <button class="btn btn-outline" onclick="toggleFilterModal()">
+                <i class="fas fa-filter"></i> Filter
+              </button>
+              <div class="filter-modal" id="filterModal">
+                <div class="filter-group">
+                  <label>Date From</label>
+                  <input type="date" id="dateFrom" />
+                </div>
+                <div class="filter-group">
+                  <label>Date To</label>
+                  <input type="date" id="dateTo" />
+                </div>
+                <div class="filter-group">
+                  <label>Payment Method</label>
+                  <select id="paymentMethod">
+                    <option value="">All Methods</option>
+                    <option value="cash">Cash</option>
+                    <option value="gcash">GCash</option>
+                    <option value="card">Credit Card</option>
+                    <option value="bank">Bank Transfer</option>
+                  </select>
+                </div>
+                <div class="filter-actions">
+                  <button
+                    class="btn btn-primary btn-block"
+                    onclick="applyFilters()"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="exportPDF()">
+              <i class="fas fa-download"></i> Export
+            </button>
+            <button
+              class="btn-icon"
+              onclick="fetchPaymentHistory()"
+              title="Refresh"
+            >
+              <i class="fas fa-sync-alt" id="refreshIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Receipt No.</th>
+              <th>Ref No.</th>
+              <th>Plate No.</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="payments-table-body">
+            <tr>
+              <td colspan="9" class="loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Pagination exactly like first code -->
+        <div class="pagination" id="pagination" style="display: none">
+          <button class="page-btn" id="prevPage">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span id="pageInfo">Page 1 of 1</span>
+          <button class="page-btn" id="nextPage">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="receiptModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Payment Receipt - <span id="modalReceiptNo">...</span></h2>
+          <button class="close" onclick="closeReceiptModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="receipt-actions">
+            <button class="btn btn-outline" onclick="printReceiptFromModal()">
+              <i class="fas fa-print"></i> Print
+            </button>
+            <button class="btn btn-success" onclick="resendEmailReceipt()">
+              <i class="fas fa-envelope"></i> Resend Email
+            </button>
+            <button class="btn btn-outline" onclick="closeReceiptModal()">
+              Close
+            </button>
+          </div>
+
+          <div class="official-receipt" id="printableReceipt">
+            <div class="receipt-header">
+              <div class="receipt-title">Land Transportation Office</div>
+              <div class="receipt-subtitle">Official Receipt</div>
+              <div class="receipt-number" id="receiptNumber">...</div>
+            </div>
+
+            <div class="receipt-body">
+              <div>
+                <div class="section-title">Vehicle Info</div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Ref No:</span>
+                  <span class="receipt-value" id="receiptRefNo">...</span>
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Plate No:</span>
+                  <span class="receipt-value" id="receiptPlate">...</span>
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Type:</span>
+                  <span class="receipt-value" id="receiptType">...</span>
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Color:</span>
+                  <span class="receipt-value" id="receiptColor">...</span>
+                </div>
+              </div>
+
+              <div>
+                <div class="section-title">Owner Info</div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Name:</span>
+                  <span class="receipt-value" id="receiptOwner">...</span>
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Contact:</span>
+                  <span class="receipt-value" id="receiptContact">...</span>
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Address:</span>
+                  <span class="receipt-value" id="receiptAddress">...</span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              style="
+                margin-top: 20px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 30px;
+              "
+            >
+              <div>
+                <div class="section-title">Payment Info</div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Date:</span>
+                  <span class="receipt-value" id="receiptPaymentDate">...</span>
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Time:</span>
+                  <span class="receipt-value" id="receiptPaymentTime">...</span>
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Method:</span>
+                  <span class="receipt-value" id="receiptPaymentMethod"
+                    >...</span
+                  >
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Payment Type:</span>
+                  <span class="receipt-value" id="receiptPaymentType">...</span>
+                </div>
+              </div>
+              <div>
+                <div class="section-title">Violations</div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Violations:</span>
+                  <span class="receipt-value" id="receiptViolations">...</span>
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Impound Date:</span>
+                  <span class="receipt-value" id="receiptImpoundDate">...</span>
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Payment Date:</span>
+                  <span class="receipt-value" id="receiptPaymentDateTime"
+                    >...</span
+                  >
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Cashier:</span>
+                  <span class="receipt-value" id="receiptCashier">...</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="fee-breakdown">
+              <div class="section-title">Fee Breakdown</div>
+              <div class="fee-item">
+                <span>Previous Balance:</span>
+                <span class="receipt-value" id="receiptPreviousBalance"
+                  >₱0.00</span
+                >
+              </div>
+              <div class="fee-item">
+                <span>Amount Paid:</span>
+                <span class="receipt-value" id="receiptAmountPaid">₱0.00</span>
+              </div>
+              <div class="fee-item">
+                <span>Remaining Balance:</span>
+                <span class="receipt-value" id="receiptRemainingBalance"
+                  >₱0.00</span
+                >
+              </div>
+              <div class="total-amount">
+                <span>TOTAL PAID</span>
+                <span id="receiptTotalAmount">₱0.00</span>
+              </div>
+            </div>
+
+            <div
+              class="fee-breakdown"
+              style="
+                background: #f0fdf4;
+                margin-top: 10px;
+                border-color: #bbf7d0;
+              "
+            >
+              <div class="fee-item">
+                <span>Payment Status:</span>
+                <span class="receipt-value" id="receiptPaymentStatus"
+                  >Paid</span
+                >
+              </div>
+            </div>
+
+            <div
+              style="
+                text-align: center;
+                margin-top: 30px;
+                font-size: 11px;
+                color: var(--text-muted);
+              "
+            >
+              <div style="margin-bottom: 5px">
+                Processed by: <span id="receiptCashierName">...</span>
+              </div>
+              <div>This is a system generated receipt.</div>
+            </div>
+          </div>
+
+          <div class="sms-notification" id="emailNotification">
+            <i class="fas fa-check-circle"></i>
+            Email receipt sent to <span id="emailContact">...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyByzd88bcUAq0VdP0w6oB8W_b2AUgoIzXc",
+        authDomain: "vehicle-impound.firebaseapp.com",
+        projectId: "vehicle-impound",
+        storageBucket: "vehicle-impound.firebasestorage.app",
+        messagingSenderId: "69239563292",
+        appId: "1:69239563292:web:281912e8a38301c0feabd9",
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      const auth = firebase.auth();
+
+      let paymentHistory = [];
+      let filteredPayments = [];
+      let receiptsData = []; // Store receipts data
+      let currentUser = null;
+      let currentReceipt = null;
+
+      // Pagination variables
+      let currentPage = 1;
+      const itemsPerPage = 8;
+
+      const paymentsTableBody = document.getElementById("payments-table-body");
+      const modal = document.getElementById("receiptModal");
+
+      // Pagination elements
+      const pagination = document.getElementById("pagination");
+      const prevPageBtn = document.getElementById("prevPage");
+      const nextPageBtn = document.getElementById("nextPage");
+      const pageInfo = document.getElementById("pageInfo");
+
+      // Stats elements
+      const todayCollectionEl = document.getElementById("todayCollection");
+      const todayTransactionsEl = document.getElementById("todayTransactions");
+      const monthlyCollectionEl = document.getElementById("monthlyCollection");
+      const totalTransactionsEl = document.getElementById("totalTransactions");
+
+      // User elements
+      const userDisplayName = document.getElementById("userDisplayName");
+      const userRole = document.getElementById("userRole");
+      const userAvatar = document.getElementById("userAvatar");
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initializeApp();
+      });
+
+      // --- UI Helper Functions ---
+      function toggleFilterModal() {
+        const m = document.getElementById("filterModal");
+        m.classList.toggle("show");
+      }
+
+      // Close filter on outside click
+      window.addEventListener("click", (e) => {
+        if (!e.target.closest(".filter-wrapper")) {
+          document.getElementById("filterModal").classList.remove("show");
+        }
+        if (!e.target.closest(".user-menu")) {
+          document.getElementById("logoutDropdown").style.display = "none";
+        }
+        if (e.target === modal) {
+          closeReceiptModal();
+        }
+      });
+
+      function toggleLogoutDropdown() {
+        const d = document.getElementById("logoutDropdown");
+        d.style.display = d.style.display === "block" ? "none" : "block";
+      }
+
+      async function initializeApp() {
+        try {
+          auth.onAuthStateChanged(async (user) => {
+            if (user) {
+              currentUser = user;
+              await loadUserData(user.uid);
+              setupEventListeners();
+              await fetchPaymentHistory();
+            } else {
+              window.location.href = "../index.html";
+            }
+          });
+        } catch (error) {
+          console.error("Error initializing app:", error);
+        }
+      }
+
+      async function loadUserData(userId) {
+        try {
+          const userDoc = await db.collection("users").doc(userId).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            userDisplayName.textContent = userData.fullName || "Cashier User";
+            userRole.textContent = formatRole(userData.role) || "Cashier";
+            if (userData.fullName) {
+              userAvatar.textContent = getInitials(userData.fullName);
+            }
+          }
+        } catch (error) {
+          console.error("Error loading user data:", error);
+        }
+      }
+
+      function getInitials(fullName) {
+        return fullName
+          .split(" ")
+          .map((name) => name[0])
+          .join("")
+          .toUpperCase()
+          .substring(0, 2);
+      }
+
+      function formatRole(role) {
+        const roleMap = {
+          admin: "Administrator",
+          officer: "Impounding Officer",
+          cashier: "Cashier",
+          releasing: "Releasing Officer",
+        };
+        return roleMap[role] || role;
+      }
+
+      async function fetchPaymentHistory() {
+        try {
+          const refreshIcon = document.getElementById("refreshIcon");
+          if (refreshIcon) refreshIcon.classList.add("spinning");
+
+          paymentsTableBody.innerHTML =
+            '<tr><td colspan="9" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+
+          // First, fetch all receipts from receipts collection
+          const receiptsSnapshot = await db.collection("receipts").get();
+          receiptsData = [];
+
+          if (receiptsSnapshot.empty) {
+            paymentsTableBody.innerHTML =
+              '<tr><td colspan="9" style="text-align:center; padding:40px;">No receipt records found.</td></tr>';
+            updateStats();
+            if (refreshIcon) refreshIcon.classList.remove("spinning");
+            return;
+          }
+
+          // Process each receipt
+          for (const receiptDoc of receiptsSnapshot.docs) {
+            const receiptData = receiptDoc.data();
+
+            // Fetch related payment data
+            let paymentData = {};
+            if (receiptData.paymentId) {
+              const paymentDoc = await db
+                .collection("payments")
+                .doc(receiptData.paymentId)
+                .get();
+              if (paymentDoc.exists) paymentData = paymentDoc.data();
+            }
+
+            // Fetch vehicle data
+            let vehicleData = {};
+            if (receiptData.vehicleId) {
+              const vehicleDoc = await db
+                .collection("impoundedVehicles")
+                .doc(receiptData.vehicleId)
+                .get();
+              if (vehicleDoc.exists) vehicleData = vehicleDoc.data();
+            }
+
+            // Fetch cashier data
+            let cashierData = {};
+            if (receiptData.cashierId) {
+              const cashierDoc = await db
+                .collection("users")
+                .doc(receiptData.cashierId)
+                .get();
+              if (cashierDoc.exists) cashierData = cashierDoc.data();
+            }
+
+            // Generate reference number
+            const refNo =
+              receiptData.referenceNo ||
+              (receiptData.vehicleId
+                ? `IMP-${new Date(
+                    receiptData.timestamp
+                  ).getFullYear()}-${receiptData.vehicleId
+                    .substring(0, 4)
+                    .toUpperCase()}`
+                : `IMP-${new Date().getFullYear()}-${receiptDoc.id.substring(
+                    0,
+                    4
+                  )}`);
+
+            paymentHistory.push({
+              id: receiptDoc.id,
+              receiptNo:
+                receiptData.receiptNumber ||
+                `RCP-${new Date(
+                  receiptData.timestamp
+                ).getFullYear()}-${receiptDoc.id.substring(0, 4)}`,
+              referenceNo: refNo,
+              plateNumber:
+                receiptData.plateNumber || vehicleData.plateNumber || "N/A",
+              vehicleType:
+                receiptData.vehicleType || vehicleData.vehicleType || "N/A",
+              amount: receiptData.amountPaid || 0,
+              paymentMethod: receiptData.paymentMethod || "Cash",
+              paymentDate: receiptData.timestamp || new Date().toISOString(),
+              paymentStatus: paymentData.paymentStatus || "paid",
+              cashierName:
+                receiptData.cashierName || cashierData.fullName || "Cashier",
+              vehicleData: vehicleData,
+              receiptData: receiptData, // Store the full receipt data
+              paymentData: paymentData,
+              cashierData: cashierData,
+            });
+          }
+
+          if (paymentHistory.length === 0) {
+            paymentsTableBody.innerHTML =
+              '<tr><td colspan="9" style="text-align:center; padding:40px;">No receipt records found.</td></tr>';
+            updateStats();
+            if (refreshIcon) refreshIcon.classList.remove("spinning");
+            return;
+          }
+
+          paymentHistory.sort(
+            (a, b) => new Date(b.paymentDate) - new Date(a.paymentDate)
+          );
+          filteredPayments = [...paymentHistory];
+          updateStats();
+          renderPaymentsTable();
+
+          if (refreshIcon) refreshIcon.classList.remove("spinning");
+        } catch (error) {
+          console.error("Error fetching payment history:", error);
+          paymentsTableBody.innerHTML =
+            '<tr><td colspan="9" style="color:red; text-align:center;">Error loading history.</td></tr>';
+        }
+      }
+
+      function updateStats() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const todayPayments = paymentHistory.filter((payment) => {
+          const paymentDate = new Date(payment.paymentDate);
+          paymentDate.setHours(0, 0, 0, 0);
+          return paymentDate.getTime() === today.getTime();
+        });
+
+        const thisMonth = new Date().getMonth();
+        const thisYear = new Date().getFullYear();
+        const monthlyPayments = paymentHistory.filter((payment) => {
+          const paymentDate = new Date(payment.paymentDate);
+          return (
+            paymentDate.getMonth() === thisMonth &&
+            paymentDate.getFullYear() === thisYear
+          );
+        });
+
+        todayCollectionEl.textContent = `₱${todayPayments
+          .reduce((sum, p) => sum + p.amount, 0)
+          .toLocaleString()}`;
+        todayTransactionsEl.textContent = todayPayments.length;
+        monthlyCollectionEl.textContent = `₱${monthlyPayments
+          .reduce((sum, p) => sum + p.amount, 0)
+          .toLocaleString()}`;
+        totalTransactionsEl.textContent = paymentHistory.length;
+      }
+
+      function renderPaymentsTable() {
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = filteredPayments.slice(start, end);
+
+        if (pageData.length === 0) {
+          paymentsTableBody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:50px; color:#64748b;">No records found.</td></tr>`;
+          pagination.style.display = "none";
+          return;
+        }
+
+        paymentsTableBody.innerHTML = "";
+
+        pageData.forEach((payment) => {
+          const row = document.createElement("tr");
+          const paymentDate = new Date(payment.paymentDate);
+          const formattedDate =
+            paymentDate.toLocaleDateString() +
+            " " +
+            paymentDate.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+
+          let statusClass = "status-paid";
+          let statusText = "Paid";
+          if (payment.receiptData?.paymentType === "Partial") {
+            statusClass = "status-partial";
+            statusText = "Partial";
+          }
+
+          row.innerHTML = `
+            <td><strong>${payment.receiptNo}</strong></td>
+            <td>${payment.referenceNo}</td>
+            <td>${payment.plateNumber}</td>
+            <td>${payment.vehicleType}</td>
+            <td class="amount">₱${payment.amount.toLocaleString()}</td>
+            <td>${payment.paymentMethod}</td>
+            <td>${formattedDate}</td>
+            <td><span class="status ${statusClass}">${statusText}</span></td>
+            <td class="action-cell">
+              <div class="action-btn-wrapper" onclick="openReceiptModal('${
+                payment.id
+              }')" title="View Details">
+                <i class="fas fa-eye"></i>
+              </div>
+              <div class="action-btn-wrapper" onclick="printReceipt('${
+                payment.id
+              }')" title="Print">
+                <i class="fas fa-print"></i>
+              </div>
+            </td>
+          `;
+          paymentsTableBody.appendChild(row);
+        });
+
+        updatePagination();
+      }
+
+      function updatePagination() {
+        const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+
+        if (totalPages > 1) {
+          pagination.style.display = "flex";
+          pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+          prevPageBtn.disabled = currentPage === 1;
+          nextPageBtn.disabled = currentPage === totalPages;
+        } else {
+          pagination.style.display = "none";
+        }
+      }
+
+      // Set up pagination event listeners
+      prevPageBtn.addEventListener("click", () => changePage(-1));
+      nextPageBtn.addEventListener("click", () => changePage(1));
+
+      function changePage(dir) {
+        const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+        currentPage += dir;
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        renderPaymentsTable();
+      }
+
+      function applyFilters() {
+        const dateFrom = document.getElementById("dateFrom").value;
+        const dateTo = document.getElementById("dateTo").value;
+        const paymentMethod = document.getElementById("paymentMethod").value;
+        const searchTerm = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+
+        filteredPayments = paymentHistory;
+
+        if (dateFrom) {
+          const fromDate = new Date(dateFrom);
+          filteredPayments = filteredPayments.filter(
+            (payment) => new Date(payment.paymentDate) >= fromDate
+          );
+        }
+        if (dateTo) {
+          const toDate = new Date(dateTo);
+          toDate.setHours(23, 59, 59, 999);
+          filteredPayments = filteredPayments.filter(
+            (payment) => new Date(payment.paymentDate) <= toDate
+          );
+        }
+        if (paymentMethod) {
+          filteredPayments = filteredPayments.filter(
+            (payment) =>
+              payment.paymentMethod.toLowerCase() ===
+              paymentMethod.toLowerCase()
+          );
+        }
+        if (searchTerm) {
+          filteredPayments = filteredPayments.filter(
+            (payment) =>
+              payment.receiptNo.toLowerCase().includes(searchTerm) ||
+              payment.plateNumber.toLowerCase().includes(searchTerm) ||
+              payment.referenceNo.toLowerCase().includes(searchTerm)
+          );
+        }
+
+        currentPage = 1;
+        renderPaymentsTable();
+
+        if (document.getElementById("filterModal").classList.contains("show")) {
+          toggleFilterModal();
+        }
+      }
+
+      function openReceiptModal(receiptId) {
+        const payment = paymentHistory.find((p) => p.id === receiptId);
+        if (!payment) return;
+        currentReceipt = payment;
+
+        const receiptData = payment.receiptData;
+
+        // Fill receipt data from saved receipt
+        document.getElementById("modalReceiptNo").textContent =
+          payment.receiptNo;
+        document.getElementById("receiptNumber").textContent =
+          payment.receiptNo;
+        document.getElementById("receiptRefNo").textContent =
+          payment.referenceNo;
+        document.getElementById("receiptPlate").textContent =
+          receiptData.plateNumber || payment.plateNumber;
+        document.getElementById("receiptType").textContent =
+          receiptData.vehicleType || payment.vehicleType;
+        document.getElementById("receiptColor").textContent =
+          payment.vehicleData?.vehicleColor || "N/A";
+        document.getElementById("receiptOwner").textContent =
+          receiptData.ownerName || payment.vehicleData?.ownerName || "N/A";
+        document.getElementById("receiptContact").textContent =
+          payment.vehicleData?.ownerContact || "N/A";
+        document.getElementById("receiptAddress").textContent =
+          payment.vehicleData?.ownerAddress || "N/A";
+
+        // Payment info
+        const paymentDate = new Date(
+          receiptData.timestamp || payment.paymentDate
+        );
+        document.getElementById("receiptPaymentDate").textContent =
+          paymentDate.toLocaleDateString();
+        document.getElementById("receiptPaymentTime").textContent =
+          paymentDate.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        document.getElementById("receiptPaymentDateTime").textContent =
+          paymentDate.toLocaleString();
+        document.getElementById("receiptPaymentMethod").textContent =
+          receiptData.paymentMethod || payment.paymentMethod;
+        document.getElementById("receiptPaymentType").textContent =
+          receiptData.paymentType || "Full";
+        document.getElementById("receiptCashier").textContent =
+          receiptData.cashierName || payment.cashierName;
+        document.getElementById("receiptCashierName").textContent =
+          receiptData.cashierName || payment.cashierName;
+
+        // Violations info
+        document.getElementById("receiptViolations").textContent =
+          Array.isArray(payment.vehicleData?.violations)
+            ? payment.vehicleData.violations.join(", ")
+            : payment.vehicleData?.violations || "No violations";
+
+        // Dates
+        if (payment.vehicleData?.impoundDate) {
+          const impoundDate = new Date(payment.vehicleData.impoundDate);
+          document.getElementById("receiptImpoundDate").textContent =
+            impoundDate.toLocaleDateString();
+        } else {
+          document.getElementById("receiptImpoundDate").textContent = "N/A";
+        }
+
+        // Financial info from receipt
+        document.getElementById("receiptPreviousBalance").textContent = `₱${(
+          receiptData.previousBalance || 0
+        ).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`;
+
+        document.getElementById("receiptAmountPaid").textContent = `₱${(
+          receiptData.amountPaid || 0
+        ).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`;
+
+        document.getElementById("receiptRemainingBalance").textContent = `₱${(
+          receiptData.remainingBalance || 0
+        ).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`;
+
+        document.getElementById("receiptTotalAmount").textContent = `₱${(
+          receiptData.amountPaid || payment.amount
+        ).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`;
+
+        document.getElementById("receiptPaymentStatus").textContent =
+          receiptData.paymentType === "Partial"
+            ? "Partial Payment"
+            : "Fully Paid";
+
+        modal.style.display = "flex";
+      }
+
+      function closeReceiptModal() {
+        modal.style.display = "none";
+        currentReceipt = null;
+      }
+
+      function printReceipt(receiptId) {
+        openReceiptModal(receiptId);
+        setTimeout(() => {
+          printReceiptFromModal();
+        }, 500);
+      }
+
+      function printReceiptFromModal() {
+        const printableReceipt = document.getElementById("printableReceipt");
+        const originalContents = document.body.innerHTML;
+        document.body.innerHTML = printableReceipt.outerHTML;
+        window.print();
+        document.body.innerHTML = originalContents;
+        initializeApp();
+      }
+
+      async function resendEmailReceipt() {
+        if (!currentReceipt) return;
+
+        const emailNotification = document.getElementById("emailNotification");
+        const emailContact = document.getElementById("emailContact");
+
+        // Get owner email from vehicle data
+        const ownerEmail = currentReceipt.vehicleData?.ownerEmail;
+
+        if (!ownerEmail) {
+          emailContact.textContent = "No email available";
+          emailNotification.style.backgroundColor = "#fee2e2";
+          emailNotification.style.color = "#991b1b";
+          emailNotification.style.borderColor = "#fecaca";
+          emailNotification.innerHTML =
+            '<i class="fas fa-exclamation-circle"></i> No email address available for this vehicle owner';
+          emailNotification.style.display = "block";
+          setTimeout(() => {
+            emailNotification.style.display = "none";
+          }, 3000);
+          return;
+        }
+
+        emailContact.textContent = ownerEmail;
+        emailNotification.style.display = "block";
+
+        // In a real implementation, you would call your email API here
+        // For now, we'll just show a success message
+        setTimeout(() => {
+          emailNotification.style.display = "none";
+        }, 3000);
+      }
+
+      function exportPDF() {
+        alert("PDF report generation would be implemented here");
+      }
+
+      async function logout() {
+        try {
+          await auth.signOut();
+          window.location.href = "../index.html";
+        } catch (error) {
+          console.error("Error during logout:", error);
+        }
+      }
+
+      function setupEventListeners() {
+        const closeBtn = document.querySelector(".close");
+        if (closeBtn) closeBtn.addEventListener("click", closeReceiptModal);
+
+        const today = new Date();
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(today.getDate() - 7);
+
+        document.getElementById("dateFrom").valueAsDate = oneWeekAgo;
+        document.getElementById("dateTo").valueAsDate = today;
+      }
+    </script>
+  </body>
+</html>

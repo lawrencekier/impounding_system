@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Released Vehicles - VIMS</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        /* VIMS Modern Palette */
+        --primary: #2563eb;
+        --primary-soft: #dbeafe;
+        --primary-dark: #1e40af;
+        --sidebar-bg: #0f172a;
+        --bg-body: #f1f5f9;
+        --bg-card: #ffffff;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --radius: 12px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+      }
+      body {
+        background-color: var(--bg-body);
+        display: flex;
+        min-height: 100vh;
+        color: var(--text-main);
+        overflow-x: hidden;
+      }
+
+      /* Animation */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 260px;
+        background: var(--sidebar-bg);
+        color: white;
+        height: 100vh;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        transition: 0.3s;
+      }
+      .sidebar-header {
+        padding: 30px 24px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        flex-shrink: 0;
+      }
+      .logo svg {
+        width: 40px;
+        height: 40px;
+      }
+      .sidebar-header h2 {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+      .sidebar-menu {
+        padding: 20px 15px;
+        flex: 1;
+        overflow-y: auto;
+      }
+      .sidebar-menu ul {
+        list-style: none;
+      }
+      .sidebar-menu li {
+        margin-bottom: 5px;
+      }
+      .sidebar-menu a {
+        display: flex;
+        align-items: center;
+        padding: 14px 20px;
+        color: #94a3b8;
+        text-decoration: none;
+        transition: 0.2s;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 14px;
+      }
+      .sidebar-menu a:hover,
+      .sidebar-menu a.active {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+      }
+      .sidebar-menu a.active {
+        background: var(--primary);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      }
+      .sidebar-menu i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+      }
+      .sidebar-logout {
+        padding: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .sidebar-logout a {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        color: #fca5a5;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+      .sidebar-logout a:hover {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+      }
+
+      /* Main Content */
+      .main-content {
+        flex: 1;
+        margin-left: 260px;
+        padding: 30px 40px;
+      }
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+      }
+      .page-title h1 {
+        font-size: 26px;
+        color: var(--text-main);
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 5px;
+      }
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      /* User Menu */
+      .user-menu {
+        display: flex;
+        align-items: center;
+        position: relative;
+        padding: 6px 8px 6px 16px;
+        border-radius: 50px;
+        background: white;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+      }
+      .user-menu:hover {
+        border-color: var(--primary);
+      }
+      .user-info {
+        text-align: right;
+        margin-right: 12px;
+      }
+      .user-name {
+        font-weight: 700;
+        color: var(--text-main);
+        font-size: 14px;
+      }
+      .user-role {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .user-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+      }
+
+      /* --- NEW PROFILE DROPDOWN CSS --- */
+      .profile-dropdown {
+        position: absolute;
+        top: 60px;
+        right: 0;
+        width: 250px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        border: 1px solid var(--border);
+        display: none;
+        z-index: 2000;
+        overflow: hidden;
+      }
+      .profile-dropdown.active {
+        display: block;
+        animation: fadeIn 0.2s ease-out;
+      }
+      .dropdown-header {
+        padding: 20px;
+        background: #f8fafc;
+        border-bottom: 1px solid var(--border);
+        text-align: center;
+      }
+      .dropdown-avatar {
+        width: 60px;
+        height: 60px;
+        background: var(--primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 700;
+        margin: 0 auto 10px;
+        border: 3px solid white;
+        box-shadow: var(--shadow-sm);
+      }
+      .dropdown-name {
+        font-weight: 700;
+        color: var(--text-main);
+        font-size: 15px;
+      }
+      .dropdown-role {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-top: 2px;
+      }
+      .dropdown-body {
+        padding: 8px;
+      }
+      .dropdown-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        color: var(--text-main);
+        text-decoration: none;
+        font-size: 14px;
+        border-radius: 8px;
+        transition: 0.2s;
+        cursor: pointer;
+        gap: 10px;
+      }
+      .dropdown-item:hover {
+        background: #f1f5f9;
+        color: var(--primary);
+      }
+      .dropdown-item.logout {
+        color: #ef4444; /* Use hex instead of var(--danger) if not defined */
+      }
+      .dropdown-item.logout:hover {
+        background: #fef2f2;
+      }
+
+      /* Stats */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 24px;
+        margin-bottom: 35px;
+        animation: fadeIn 0.4s ease-out;
+      }
+      .stat-card {
+        background: var(--bg-card);
+        border-radius: 16px;
+        box-shadow: var(--shadow-sm);
+        padding: 25px;
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .stat-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--text-main);
+        letter-spacing: -1px;
+        margin-bottom: 5px;
+      }
+      .stat-label {
+        font-size: 13px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Data Table */
+      .data-table {
+        background: var(--bg-card);
+        border-radius: 16px;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      .table-header {
+        padding: 20px 25px;
+        background: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+      }
+      .table-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+      .table-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn {
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        transition: 0.2s;
+      }
+      .btn-outline {
+        background: white;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+      }
+      .btn-outline:hover {
+        background: var(--bg-body);
+        color: var(--text-main);
+        border-color: var(--text-main);
+      }
+
+      .btn-icon-only {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: white;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .btn-icon-only:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-soft);
+      }
+      .btn-icon-only i.spinning {
+        animation: spin 0.8s linear infinite;
+      }
+
+      /* Table */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+      th {
+        background: #f8fafc;
+        padding: 16px 24px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--border);
+      }
+      td {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-main);
+        font-size: 14px;
+        vertical-align: middle;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      tr:hover td {
+        background-color: #f8fafc;
+      }
+
+      /* Specific Column Widths */
+      th:nth-child(1) {
+        width: 15%;
+      } /* Release No */
+      th:nth-child(2) {
+        width: 12%;
+      } /* Plate */
+      th:nth-child(3) {
+        width: 12%;
+      } /* Type */
+      th:nth-child(4) {
+        width: 20%;
+      } /* Owner */
+      th:nth-child(5) {
+        width: 15%;
+      } /* Date */
+      th:nth-child(6) {
+        width: 12%;
+        text-align: center;
+      } /* Status */
+      th:nth-child(7) {
+        width: 14%;
+        text-align: center;
+      } /* Actions */
+      td:nth-child(6),
+      td:nth-child(7) {
+        text-align: center;
+      }
+
+      .status {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        display: inline-block;
+      }
+      .status-released {
+        background: #e2e8f0;
+        color: #475569;
+      }
+
+      .action-cell {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+      .action-btn-wrapper {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s;
+        background: white;
+        border: 1px solid var(--border);
+      }
+      .action-btn-wrapper:hover {
+        border-color: var(--primary);
+        background: var(--primary-soft);
+      }
+      .action-btn-wrapper i {
+        color: var(--text-muted);
+        font-size: 13px;
+      }
+      .action-btn-wrapper:hover i {
+        color: var(--primary);
+      }
+
+      .search-container {
+        display: flex;
+        align-items: center;
+        position: relative;
+        width: 100%;
+        max-width: 350px;
+      }
+      .search-container input {
+        width: 100%;
+        padding: 12px 15px 12px 45px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 14px;
+        background: #f8fafc;
+        outline: none;
+        transition: 0.2s;
+      }
+      .search-container input:focus {
+        border-color: var(--primary);
+        background: white;
+        box-shadow: 0 0 0 3px var(--primary-soft);
+      }
+      .search-container i {
+        position: absolute;
+        left: 15px;
+        color: var(--text-muted);
+        font-size: 16px;
+      }
+
+      /* Pagination */
+      .pagination {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        padding: 15px 25px;
+        border-top: 1px solid var(--border);
+        background: white;
+      }
+      .page-btn {
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--border);
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        transition: 0.2s;
+      }
+      .page-btn:hover:not(:disabled) {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-soft);
+      }
+      .page-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+      .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Modal */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(4px);
+        animation: fadeIn 0.2s;
+      }
+      .modal-content {
+        background-color: white;
+        border-radius: 20px;
+        width: 95%;
+        max-width: 500px;
+        padding: 0;
+        overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        display: flex;
+        flex-direction: column;
+        animation: fadeIn 0.3s ease-out;
+      }
+      .modal-header {
+        padding: 25px 30px;
+        border-bottom: 1px solid var(--border);
+        background: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .modal-header h2 {
+        margin: 0;
+        font-size: 20px;
+        color: var(--text-main);
+        font-weight: 800;
+      }
+      .close {
+        width: 36px;
+        height: 36px;
+        background: #f1f5f9;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--text-muted);
+        font-size: 18px;
+        border: none;
+        transition: 0.2s;
+      }
+      .close:hover {
+        background: #fee2e2;
+        color: #ef4444;
+      }
+      .modal-body {
+        padding: 30px;
+      }
+
+      /* View Modal UI */
+      .view-header {
+        margin-bottom: 25px;
+        text-align: center;
+      }
+      .view-stat-circle {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: #f1f5f9;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px auto;
+        font-size: 28px;
+      }
+      .view-plate {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--text-main);
+        letter-spacing: 1px;
+      }
+      .view-ref {
+        font-size: 14px;
+        color: var(--text-muted);
+        font-family: monospace;
+        background: #f1f5f9;
+        padding: 4px 10px;
+        border-radius: 20px;
+        display: inline-block;
+        margin-top: 5px;
+      }
+      .view-details-box {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 25px;
+        margin-top: 20px;
+        box-shadow: var(--shadow-sm);
+      }
+      .view-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 14px;
+      }
+      .view-row:last-child {
+        margin-bottom: 0;
+      }
+      .view-lbl {
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+      .view-val {
+        color: var(--text-main);
+        font-weight: 600;
+      }
+
+      .loading,
+      .no-data {
+        text-align: center;
+        padding: 40px;
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-content {
+          margin-left: 0;
+          padding: 20px;
+        }
+        .header-left,
+        .header-right {
+          flex-direction: column;
+          width: 100%;
+        }
+        .search-container {
+          max-width: 100%;
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <svg viewBox="0 0 512 512" width="40" height="40" fill="white">
+            <path
+              d="M112,112c0-26.5,21.5-48,48-48h76.3c15.2-22,40.7-36.5,69.7-36.5s54.5,14.5,69.7,36.5H416c26.5,0,48,21.5,48,48v64H112V112z M306,83.5c-11.2,0-20.7,7.8-23.2,18.5h46.4C326.7,91.3,317.2,83.5,306,83.5z"
+            />
+            <path
+              d="M47.5,192C21.3,192,0,213.3,0,239.5v161C0,426.7,21.3,448,47.5,448h17.1c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h161.2c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h12.1c26.2,0,47.5-21.3,47.5-47.5v-161C560,213.3,538.7,192,512.5,192H47.5z M133,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S148.1,456.2,133,456.2z M431,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S446.1,456.2,431,456.2z"
+            />
+          </svg>
+        </div>
+        <h2>VIMS</h2>
+      </div>
+      <div class="sidebar-menu">
+        <ul>
+          <li>
+            <a href="releasing-dashboard.html"
+              ><i class="fas fa-tachometer-alt"></i> Dashboard</a
+            >
+          </li>
+          <li>
+            <a href="vehicles-ready-for-release.html"
+              ><i class="fas fa-car"></i> Ready for Release</a
+            >
+          </li>
+          <li>
+            <a href="released-vehicles.html" class="active"
+              ><i class="fas fa-file-export"></i> Released Vehicles</a
+            >
+          </li>
+        </ul>
+      </div>
+      <div class="sidebar-logout">
+        <ul>
+          <li>
+            <a href="#" id="logoutBtn"
+              ><i class="fas fa-sign-out-alt"></i> Logout</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="top-bar">
+        <div class="page-title">
+          <h1>Released Vehicles History</h1>
+          <p>Archive of all vehicles officially released from impound.</p>
+        </div>
+
+        <div class="user-menu" id="userMenuBtn">
+          <div class="user-info">
+            <div class="user-name" id="userName">Loading...</div>
+            <div class="user-role" id="userRole">Officer</div>
+          </div>
+          <div class="user-avatar" id="userAvatar">OS</div>
+
+          <div class="profile-dropdown" id="profileDropdown">
+            <div class="dropdown-header">
+              <div class="dropdown-avatar" id="dropdownAvatar">?</div>
+              <div class="dropdown-name" id="dropdownName">User Name</div>
+              <div class="dropdown-role" id="dropdownRole">Role</div>
+            </div>
+            <div class="dropdown-body">
+              <a class="dropdown-item"
+                ><i class="fas fa-cog" style="color: var(--text-muted)"></i>
+                Settings</a
+              >
+              <hr
+                style="border: 0; border-top: 1px solid #eee; margin: 5px 0"
+              />
+              <a class="dropdown-item logout" id="logoutBtnDropdown"
+                ><i class="fas fa-sign-out-alt"></i> Logout</a
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="statReady">0</div>
+          <div class="stat-label">Ready for Release</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statToday">0</div>
+          <div class="stat-label">Released Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statWeek">0</div>
+          <div class="stat-label">Released This Week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-label">Total Released</div>
+        </div>
+      </div>
+
+      <div class="data-table">
+        <div class="table-header">
+          <div class="header-left">
+            <div class="search-container">
+              <i class="fas fa-search"></i>
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search by Plate, Owner, or Release ID..."
+              />
+            </div>
+          </div>
+          <div class="header-right">
+            <button class="btn-icon-only" id="refreshBtn" title="Refresh">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Release ID</th>
+              <th>Plate Number</th>
+              <th>Vehicle Type</th>
+              <th>Owner Name</th>
+              <th>Date Released</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="releasedTableBody">
+            <tr>
+              <td colspan="7" class="loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading released
+                vehicles...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="pagination" id="pagination" style="display: none">
+          <button class="page-btn" id="prevPage">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span id="pageInfo">Page 1 of 1</span>
+          <button class="page-btn" id="nextPage">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="viewModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Release Details</h2>
+          <button class="close" id="closeViewModal">&times;</button>
+        </div>
+        <div class="modal-body" id="viewModalContent"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        getDocs,
+        query,
+        where,
+        orderBy,
+      } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+      import {
+        getAuth,
+        signOut,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyByzd88bcUAq0VdP0w6oB8W_b2AUgoIzXc",
+        authDomain: "vehicle-impound.firebaseapp.com",
+        projectId: "vehicle-impound",
+        storageBucket: "vehicle-impound.appspot.com",
+        messagingSenderId: "69239563292",
+        appId: "1:69239563292:web:281912e8a38301c0feabd9",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+
+      // Variables
+      let allReleases = [];
+      let filteredReleases = [];
+      let currentPage = 1;
+      const itemsPerPage = 8;
+      let currentUser = null;
+
+      // --- ADDED HELPERS ---
+      // Helper to parse Firestore Timestamp to JavaScript Date
+      function parseTimestampToDate(dateInput) {
+        if (!dateInput) return null;
+
+        // If it's a Firestore Timestamp (has toDate method)
+        if (typeof dateInput.toDate === "function") {
+          return dateInput.toDate();
+        }
+
+        // If it's already a Date object
+        if (dateInput instanceof Date) {
+          return dateInput;
+        }
+
+        // If it's a string or number, parse it
+        const parsed = new Date(dateInput);
+        return isNaN(parsed.getTime()) ? null : parsed;
+      }
+
+      // Format date for display
+      function formatDate(dateInput) {
+        const date = parseTimestampToDate(dateInput);
+        return date ? date.toLocaleDateString() : "N/A";
+      }
+
+      // DOM
+      const searchInput = document.getElementById("searchInput");
+      const refreshBtn = document.getElementById("refreshBtn");
+      const prevPageBtn = document.getElementById("prevPage");
+      const nextPageBtn = document.getElementById("nextPage");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const logoutBtnDropdown = document.getElementById("logoutBtnDropdown");
+
+      document.addEventListener("DOMContentLoaded", () => {
+        setupEventListeners();
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            await loadUserData(user);
+            await loadReleasedVehicles();
+          } else {
+            window.location.href = "../index.html";
+          }
+        });
+      });
+
+      // --- DROPDOWN TOGGLE LOGIC ---
+      const userMenuBtn = document.getElementById("userMenuBtn");
+      const profileDropdown = document.getElementById("profileDropdown");
+
+      userMenuBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        profileDropdown.classList.toggle("active");
+        userMenuBtn.classList.toggle("active");
+      });
+
+      document.addEventListener("click", (e) => {
+        if (
+          !userMenuBtn.contains(e.target) &&
+          !profileDropdown.contains(e.target)
+        ) {
+          profileDropdown.classList.remove("active");
+          userMenuBtn.classList.remove("active");
+        }
+      });
+
+      function setupEventListeners() {
+        searchInput.addEventListener("input", filterReleases);
+        refreshBtn.addEventListener("click", refreshData);
+        prevPageBtn.addEventListener("click", () => changePage(-1));
+        nextPageBtn.addEventListener("click", () => changePage(1));
+        if (logoutBtn) logoutBtn.addEventListener("click", logout);
+        if (logoutBtnDropdown)
+          logoutBtnDropdown.addEventListener("click", logout);
+        document
+          .getElementById("closeViewModal")
+          .addEventListener(
+            "click",
+            () => (document.getElementById("viewModal").style.display = "none")
+          );
+      }
+
+      // --- USER DATA FETCHING (Corrected for fullName) ---
+      async function loadUserData(firebaseUser) {
+        try {
+          const q = query(
+            collection(db, "users"),
+            where("email", "==", firebaseUser.email)
+          );
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            const d = snap.docs[0].data();
+
+            // Map Firestore Data
+            currentUser = {
+              uid: firebaseUser.uid,
+              readableId: d.readableId,
+              fullName: d.fullName, // Specifically fetching fullName
+              role: d.role,
+              email: d.email,
+            };
+
+            updateUserProfileUI();
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      function updateUserProfileUI() {
+        // Fallback if data missing
+        const name = currentUser.fullName || "Officer";
+        const role = currentUser.role || "Officer";
+        const initials = name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .substring(0, 2)
+          .toUpperCase();
+
+        // Update Top Bar
+        document.getElementById("userName").textContent = name;
+        document.getElementById("userRole").textContent = role.toUpperCase();
+        document.getElementById("userAvatar").textContent = initials;
+
+        // Update Dropdown Header
+        document.getElementById("dropdownName").textContent = name;
+        document.getElementById("dropdownRole").textContent =
+          role.toUpperCase();
+        document.getElementById("dropdownAvatar").textContent = initials;
+      }
+
+      async function loadReleasedVehicles() {
+        document.getElementById("releasedTableBody").innerHTML =
+          '<tr><td colspan="7" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+        try {
+          // Fetch releases collection
+          const q = query(
+            collection(db, "releases"),
+            orderBy("releaseDate", "desc")
+          );
+          const querySnapshot = await getDocs(q);
+
+          // Fetch vehicles to join data
+          const vQ = query(collection(db, "impoundedVehicles"));
+          const vSnap = await getDocs(vQ);
+          const vehiclesMap = new Map();
+          vSnap.forEach((d) => vehiclesMap.set(d.id, d.data()));
+
+          allReleases = [];
+          let releasedToday = 0;
+          let releasedWeek = 0;
+
+          const now = new Date();
+          const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+          const startOfWeek = new Date(
+            now.setDate(now.getDate() - now.getDay())
+          ); // Sunday
+
+          querySnapshot.forEach((doc) => {
+            const rData = doc.data();
+            const vData = vehiclesMap.get(rData.vehicleId) || {};
+            // Updated to use helper
+            const rDate = parseTimestampToDate(rData.releaseDate);
+
+            if (rDate >= startOfDay) releasedToday++;
+            if (rDate >= startOfWeek) releasedWeek++;
+
+            allReleases.push({
+              id: doc.id,
+              releaseIdDisplay: "REL-" + doc.id.substring(0, 6).toUpperCase(),
+              plateNumber: vData.plateNumber || "N/A",
+              vehicleType: vData.vehicleType || "N/A",
+              ownerName: vData.ownerName || "Unknown",
+              ownerContact: vData.ownerContact || "N/A",
+              vehicleModel: vData.vehicleModel || "N/A",
+              releaseDate: rData.releaseDate,
+              releasedBy: rData.releasedBy,
+              notes: rData.notes || "No notes",
+              status: "Released",
+            });
+          });
+
+          // Update Stats
+          const readyQ = query(
+            collection(db, "impoundedVehicles"),
+            where("status", "in", ["paid"])
+          );
+          const readySnap = await getDocs(readyQ);
+
+          document.getElementById("statReady").textContent = readySnap.size;
+          document.getElementById("statToday").textContent = releasedToday;
+          document.getElementById("statWeek").textContent = releasedWeek;
+          document.getElementById("statTotal").textContent = allReleases.length;
+
+          filterReleases();
+        } catch (error) {
+          console.error("Error:", error);
+          document.getElementById("releasedTableBody").innerHTML =
+            '<tr><td colspan="7" class="no-data">Error loading data</td></tr>';
+        }
+      }
+
+      function filterReleases() {
+        const term = searchInput.value.toLowerCase().trim();
+        filteredReleases = allReleases.filter((r) => {
+          return (
+            !term ||
+            r.id.toLowerCase().includes(term) ||
+            r.plateNumber.toLowerCase().includes(term) ||
+            r.ownerName.toLowerCase().includes(term)
+          );
+        });
+        currentPage = 1;
+        renderTable();
+      }
+
+      // UPDATED renderTable
+      function renderTable() {
+        const tbody = document.getElementById("releasedTableBody");
+        if (filteredReleases.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="7" class="no-data">No released vehicles found.</td></tr>';
+          document.getElementById("pagination").style.display = "none";
+          return;
+        }
+
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = filteredReleases.slice(start, end);
+
+        tbody.innerHTML = pageData
+          .map((r) => {
+            // Safely parse date and time
+            const rDateObj = parseTimestampToDate(r.releaseDate);
+            const dateStr = rDateObj ? rDateObj.toLocaleDateString() : "N/A";
+            const timeStr = rDateObj
+              ? rDateObj.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "";
+
+            return `
+                <tr>
+                    <td><span class="ref-cell">${r.releaseIdDisplay}</span></td>
+                    <td class="plate-cell">${r.plateNumber}</td>
+                    <td class="type-cell">${r.vehicleType}</td>
+                    <td>${r.ownerName}</td>
+                    <td><span class="date-cell">${dateStr} ${timeStr}</span></td>
+                    <td><span class="status status-released">${r.status.toUpperCase()}</span></td>
+                    <td class="action-cell">
+                        <div class="action-btn-wrapper action-view" onclick="viewDetails('${
+                          r.id
+                        }')" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="action-btn-wrapper action-print" onclick="printSlip('${
+                          r.id
+                        }')" title="Re-print Slip">
+                            <i class="fas fa-print"></i>
+                        </div>
+                    </td>
+                </tr>
+            `;
+          })
+          .join("");
+
+        updatePagination();
+      }
+
+      function updatePagination() {
+        const pagination = document.getElementById("pagination");
+        const total = Math.ceil(filteredReleases.length / itemsPerPage);
+        if (total > 1) {
+          pagination.style.display = "flex";
+          document.getElementById(
+            "pageInfo"
+          ).textContent = `Page ${currentPage} of ${total}`;
+          prevPageBtn.disabled = currentPage === 1;
+          nextPageBtn.disabled = currentPage === total;
+        } else {
+          pagination.style.display = "none";
+        }
+      }
+
+      function changePage(dir) {
+        const total = Math.ceil(filteredReleases.length / itemsPerPage);
+        currentPage += dir;
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > total) currentPage = total;
+        renderTable();
+      }
+
+      window.viewDetails = (id) => {
+        const r = allReleases.find((x) => x.id === id);
+        if (!r) return;
+
+        // Safely parse date for modal
+        const rDateObj = parseTimestampToDate(r.releaseDate);
+        const rDateStr = rDateObj ? rDateObj.toLocaleString() : "N/A";
+
+        document.getElementById("viewModalContent").innerHTML = `
+                <div class="view-header">
+                    <div class="view-stat-circle"><i class="fas fa-check"></i></div>
+                    <div class="view-plate">${r.plateNumber}</div>
+                    <div class="view-ref">Ref: ${r.id
+                      .substring(0, 8)
+                      .toUpperCase()}...</div>
+                </div>
+
+                <div class="view-details-box">
+                    <div class="view-row"><span class="view-lbl">Release ID</span><span class="view-val">${
+                      r.releaseIdDisplay
+                    }</span></div>
+                    <div class="view-row"><span class="view-lbl">Owner Name</span><span class="view-val">${
+                      r.ownerName
+                    }</span></div>
+                    <div class="view-row"><span class="view-lbl">Vehicle Type</span><span class="view-val">${
+                      r.vehicleType
+                    }</span></div>
+                    <div class="view-row"><span class="view-lbl">Model</span><span class="view-val">${
+                      r.vehicleModel
+                    }</span></div>
+                    <div class="view-row"><span class="view-lbl">Released Date</span><span class="view-val">${rDateStr}</span></div>
+                </div>
+
+                <div class="view-details-box" style="margin-top:15px; background:#f8fafc;">
+                    <div class="view-row" style="flex-direction:column; align-items:flex-start; gap:5px; margin:0;">
+                        <span class="view-lbl" style="font-size:12px; font-weight:700; text-transform:uppercase;">Release Notes</span>
+                        <p style="font-size:14px; color:#1e293b; margin:0; line-height:1.5;">${
+                          r.notes
+                        }</p>
+                    </div>
+                </div>
+            `;
+        document.getElementById("viewModal").style.display = "flex";
+      };
+
+      window.printSlip = (id) => {
+        window.open(`release-slip.html?id=${id}`, "_blank");
+      };
+
+      async function refreshData() {
+        const btn = document.getElementById("refreshBtn");
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        await loadReleasedVehicles();
+        btn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+      }
+
+      async function logout() {
+        await signOut(auth);
+        window.location.href = "../index.html";
+      }
+    </script>
+  </body>
+</html>

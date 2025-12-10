@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Stickers - LTO VIS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --lto-blue: #0056a6;
+            --lto-light-blue: #e6f0ff;
+            --lto-dark-blue: #003d7a;
+            --lto-yellow: #ffcc00;
+            --lto-white: #ffffff;
+            --lto-gray: #f5f5f5;
+            --lto-dark-gray: #333333;
+            --lto-light-gray: #e0e0e0;
+            --lto-green: #28a745;
+            --lto-red: #dc3545;
+            --lto-orange: #fd7e14;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: var(--lto-dark-blue);
+            color: var(--lto-white);
+            height: 100vh;
+            position: fixed;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background-color: var(--lto-blue);
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header .logo {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .sidebar-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .sidebar-menu {
+            padding: 15px 0;
+        }
+
+        .sidebar-menu ul {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--lto-white);
+            border-left-color: var(--lto-yellow);
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--lto-light-gray);
+        }
+
+        .page-title h1 {
+            font-size: 24px;
+            color: var(--lto-dark-blue);
+            margin-bottom: 5px;
+        }
+
+        .page-title p {
+            color: var(--lto-dark-gray);
+            font-size: 14px;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-info {
+            text-align: right;
+            margin-right: 15px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--lto-dark-blue);
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: var(--lto-dark-gray);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--lto-blue);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .data-table {
+            background-color: var(--lto-white);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .table-header {
+            padding: 15px 20px;
+            background-color: var(--lto-light-blue);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--lto-dark-blue);
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border-radius: 4px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .btn i {
+            margin-right: 5px;
+        }
+
+        .btn-primary {
+            background-color: var(--lto-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--lto-dark-blue);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--lto-blue);
+            color: var(--lto-blue);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--lto-light-blue);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: var(--lto-gray);
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--lto-dark-gray);
+            border-bottom: 1px solid var(--lto-light-gray);
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--lto-light-gray);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: var(--lto-light-blue);
+        }
+
+        .status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .action-cell {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-icon-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .action-print {
+            background-color: #e6f0ff;
+            color: var(--lto-blue);
+        }
+
+        .action-view {
+            background-color: #fff3cd;
+            color: var(--lto-orange);
+        }
+
+        .action-icon-btn:hover {
+            opacity: 0.8;
+        }
+
+        /* QR Sticker Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: var(--lto-white);
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            padding: 20px;
+            background-color: var(--lto-blue);
+            color: white;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: var(--lto-light-gray);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .qr-sticker {
+            border: 2px solid var(--lto-light-gray);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: white;
+        }
+
+        .qr-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--lto-light-gray);
+        }
+
+        .qr-logo {
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+        }
+
+        .qr-title {
+            color: var(--lto-dark-blue);
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .qr-code {
+            margin: 20px auto;
+            width: 200px;
+            height: 200px;
+            background-color: var(--lto-light-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--lto-light-gray);
+        }
+
+        .qr-code-placeholder {
+            color: var(--lto-dark-gray);
+            font-size: 14px;
+        }
+
+        .qr-details {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .qr-detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--lto-light-gray);
+        }
+
+        .qr-detail-label {
+            color: var(--lto-dark-gray);
+            font-weight: 500;
+        }
+
+        .qr-detail-value {
+            color: var(--lto-dark-blue);
+            font-weight: 600;
+        }
+
+        .qr-footer {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid var(--lto-light-gray);
+            color: var(--lto-dark-gray);
+            font-size: 12px;
+        }
+
+        .print-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid var(--lto-light-gray);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+            
+            .sidebar .menu-text, .sidebar-header h2 {
+                display: none;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .qr-sticker, .qr-sticker * {
+                visibility: visible;
+            }
+            .qr-sticker {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                border: none;
+                box-shadow: none;
+            }
+            .print-actions {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="40" height="40" rx="8" fill="white"/>
+                    <path d="M10 20C10 14.4772 14.4772 10 20 10C25.5228 10 30 14.4772 30 20C30 25.5228 25.5228 30 20 30C14.4772 30 10 25.5228 10 20Z" fill="#0056a6"/>
+                    <rect x="15" y="15" width="10" height="10" rx="2" fill="white"/>
+                </svg>
+            </div>
+            <h2>LTO VIS</h2>
+        </div>
+        <div class="sidebar-menu">
+            <ul>
+                <li><a href="officer-dashboard.html"><i class="fas fa-tachometer-alt"></i> <span class="menu-text">Dashboard</span></a></li>
+                <li><a href="officer-add-vehicle.html"><i class="fas fa-car-side"></i> <span class="menu-text">Add Vehicle</span></a></li>
+                <li><a href="officer-my-vehicles.html"><i class="fas fa-list"></i> <span class="menu-text">My Vehicles</span></a></li>
+                <li><a href="officer-qr-sticker.html" class="active"><i class="fas fa-qrcode"></i> <span class="menu-text">QR Stickers</span></a></li>
+                <li><a href="#"><i class="fas fa-sign-out-alt"></i> <span class="menu-text">Logout</span></a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>QR Stickers</h1>
+                <p>Generate and print QR stickers for impounded vehicles.</p>
+            </div>
+            <div class="user-menu">
+                <div class="user-info">
+                    <div class="user-name">Officer Juan</div>
+                    <div class="user-role">Impounding Officer</div>
+                </div>
+                <div class="user-avatar">OJ</div>
+            </div>
+        </div>
+
+        <div class="data-table">
+            <div class="table-header">
+                <div class="table-title">Vehicles Ready for QR Stickers</div>
+                <div class="table-actions">
+                    <button class="btn btn-outline">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <button class="btn btn-primary">
+                        <i class="fas fa-print"></i> Bulk Print
+                    </button>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Reference No.</th>
+                        <th>Plate Number</th>
+                        <th>Vehicle Type</th>
+                        <th>Date Impounded</th>
+                        <th>Status</th>
+                        <th>QR Generated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>IMP-2023-0015</td>
+                        <td>ABC 1234</td>
+                        <td>Sedan</td>
+                        <td>10/15/2023</td>
+                        <td><span class="status status-pending">Pending</span></td>
+                        <td>No</td>
+                        <td class="action-cell">
+                            <div class="action-icon-btn action-print" onclick="openQRModal('IMP-2023-0015')">
+                                <i class="fas fa-print"></i>
+                            </div>
+                            <div class="action-icon-btn action-view">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>IMP-2023-0014</td>
+                        <td>XYZ 5678</td>
+                        <td>Motorcycle</td>
+                        <td>10/14/2023</td>
+                        <td><span class="status status-approved">Approved</span></td>
+                        <td>Yes</td>
+                        <td class="action-cell">
+                            <div class="action-icon-btn action-print" onclick="openQRModal('IMP-2023-0014')">
+                                <i class="fas fa-print"></i>
+                            </div>
+                            <div class="action-icon-btn action-view">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>IMP-2023-0013</td>
+                        <td>DEF 9012</td>
+                        <td>SUV</td>
+                        <td>10/13/2023</td>
+                        <td><span class="status status-approved">Approved</span></td>
+                        <td>Yes</td>
+                        <td class="action-cell">
+                            <div class="action-icon-btn action-print" onclick="openQRModal('IMP-2023-0013')">
+                                <i class="fas fa-print"></i>
+                            </div>
+                            <div class="action-icon-btn action-view">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>IMP-2023-0012</td>
+                        <td>GHI 3456</td>
+                        <td>Van</td>
+                        <td>10/12/2023</td>
+                        <td><span class="status status-approved">Approved</span></td>
+                        <td>Yes</td>
+                        <td class="action-cell">
+                            <div class="action-icon-btn action-print" onclick="openQRModal('IMP-2023-0012')">
+                                <i class="fas fa-print"></i>
+                            </div>
+                            <div class="action-icon-btn action-view">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- QR Sticker Modal -->
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>QR Sticker - <span id="modalRefNo">IMP-2023-0015</span></h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="qr-sticker" id="printableQR">
+                    <div class="qr-header">
+                        <div class="qr-logo">
+                            <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="50" height="50" rx="8" fill="#0056a6"/>
+                                <path d="M12 25C12 17.82 17.82 12 25 12C32.18 12 38 17.82 38 25C38 32.18 32.18 38 25 38C17.82 38 12 32.18 12 25Z" fill="#ffcc00"/>
+                                <rect x="19" y="19" width="12" height="12" rx="3" fill="#0056a6"/>
+                            </svg>
+                        </div>
+                        <div class="qr-title">
+                            LTO VEHICLE IMPOUNDMENT<br>
+                            <small style="font-size: 14px; font-weight: normal;">QR STICKER</small>
+                        </div>
+                    </div>
+                    
+                    <div class="qr-code">
+                        <div class="qr-code-placeholder">
+                            <i class="fas fa-qrcode" style="font-size: 48px; margin-bottom: 10px;"></i><br>
+                            SCAN ME
+                        </div>
+                    </div>
+
+                    <div class="qr-details">
+                        <div class="qr-detail-item">
+                            <span class="qr-detail-label">Reference No:</span>
+                            <span class="qr-detail-value" id="detailRefNo">IMP-2023-0015</span>
+                        </div>
+                        <div class="qr-detail-item">
+                            <span class="qr-detail-label">Plate Number:</span>
+                            <span class="qr-detail-value" id="detailPlate">ABC 1234</span>
+                        </div>
+                        <div class="qr-detail-item">
+                            <span class="qr-detail-label">Vehicle Type:</span>
+                            <span class="qr-detail-value" id="detailType">Sedan</span>
+                        </div>
+                        <div class="qr-detail-item">
+                            <span class="qr-detail-label">Date Impounded:</span>
+                            <span class="qr-detail-value" id="detailDate">10/15/2023</span>
+                        </div>
+                        <div class="qr-detail-item">
+                            <span class="qr-detail-label">Violation:</span>
+                            <span class="qr-detail-value" id="detailViolation">Illegal Parking</span>
+                        </div>
+                    </div>
+
+                    <div class="qr-footer">
+                        Scan this QR code to view vehicle details and payment status
+                    </div>
+                </div>
+
+                <div class="print-actions">
+                    <button class="btn btn-outline" onclick="closeQRModal()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    <button class="btn btn-primary" onclick="printQRSticker()">
+                        <i class="fas fa-print"></i> Print Sticker
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal functionality
+        const modal = document.getElementById('qrModal');
+        const closeBtn = document.querySelector('.close');
+
+        function openQRModal(refNo) {
+            // In a real application, you would fetch vehicle data based on refNo
+            const vehicleData = {
+                'IMP-2023-0015': {
+                    plate: 'ABC 1234',
+                    type: 'Sedan',
+                    date: '10/15/2023',
+                    violation: 'Illegal Parking'
+                },
+                'IMP-2023-0014': {
+                    plate: 'XYZ 5678',
+                    type: 'Motorcycle',
+                    date: '10/14/2023',
+                    violation: 'No Registration'
+                },
+                'IMP-2023-0013': {
+                    plate: 'DEF 9012',
+                    type: 'SUV',
+                    date: '10/13/2023',
+                    violation: 'Reckless Driving'
+                },
+                'IMP-2023-0012': {
+                    plate: 'GHI 3456',
+                    type: 'Van',
+                    date: '10/12/2023',
+                    violation: 'No Driver\'s License'
+                }
+            };
+
+            const data = vehicleData[refNo] || vehicleData['IMP-2023-0015'];
+            
+            document.getElementById('modalRefNo').textContent = refNo;
+            document.getElementById('detailRefNo').textContent = refNo;
+            document.getElementById('detailPlate').textContent = data.plate;
+            document.getElementById('detailType').textContent = data.type;
+            document.getElementById('detailDate').textContent = data.date;
+            document.getElementById('detailViolation').textContent = data.violation;
+
+            modal.style.display = 'block';
+        }
+
+        function closeQRModal() {
+            modal.style.display = 'none';
+        }
+
+        function printQRSticker() {
+            window.print();
+        }
+
+        // Close modal when clicking X or outside
+        closeBtn.addEventListener('click', closeQRModal);
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                closeQRModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeQRModal();
+            }
+        });
+    </script>
+</body>
+</html>

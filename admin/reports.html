@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reports - VIS</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="sidebar.css" />
+
+    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore-compat.js"></script>
+
+    <style>
+      :root {
+        /* Exact Palette */
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --sidebar-bg: #1e293b;
+        --bg-body: #f1f5f9;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --danger: #ef4444;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --partial: #f97316; /* Orange for partial */
+
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+
+        --radius: 12px;
+        --anim-speed: 0.25s;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+      }
+
+      body {
+        background-color: var(--bg-body);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        color: var(--text-main);
+      }
+
+      /* --- Main Content --- */
+      .main-content {
+        flex: 1;
+        margin-left: 260px; /* Matches sidebar width */
+        padding: 30px 40px;
+        transition: var(--anim-speed);
+        padding-bottom: 80px;
+        width: calc(100% - 260px);
+      }
+
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 35px;
+      }
+
+      .page-title h1 {
+        font-size: 26px;
+        color: var(--text-main);
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
+
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin-top: 4px;
+      }
+
+      /* User Menu (Pill) */
+      .user-menu {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        padding: 6px 8px 6px 16px;
+        border-radius: 50px;
+        background: white;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+        position: relative;
+      }
+
+      .user-menu:hover {
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+      }
+
+      .user-info {
+        text-align: right;
+        margin-right: 12px;
+      }
+
+      .user-name {
+        font-weight: 700;
+        color: var(--text-main);
+        font-size: 14px;
+      }
+
+      .user-role {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .user-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+      }
+
+      .logout-dropdown {
+        position: absolute;
+        top: 60px;
+        right: 0;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 10px;
+        min-width: 200px;
+        display: none;
+        z-index: 1000;
+        border: 1px solid var(--border);
+      }
+
+      .logout-item {
+        padding: 12px 15px;
+        display: flex;
+        align-items: center;
+        color: var(--text-main);
+        text-decoration: none;
+        transition: 0.2s;
+        cursor: pointer;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        font-size: 14px;
+        border-radius: 8px;
+      }
+
+      .logout-item:hover {
+        background-color: var(--bg-body);
+        color: var(--primary);
+      }
+
+      .logout-item i {
+        margin-right: 10px;
+        width: 16px;
+      }
+
+      /* --- Stats Grid --- */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 24px;
+        margin-bottom: 35px;
+      }
+
+      .stat-card {
+        background: var(--bg-card);
+        padding: 25px;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        transition: 0.3s;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+      }
+
+      .stat-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 5px;
+        letter-spacing: -1px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .stat-label {
+        font-size: 13px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        position: relative;
+        z-index: 2;
+      }
+
+      .stat-card::after {
+        content: "";
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        width: 60px;
+        height: 60px;
+        background: var(--primary);
+        opacity: 0.05;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      /* --- Tabs --- */
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 25px;
+        gap: 20px;
+        overflow-x: auto;
+      }
+
+      .tab {
+        padding: 10px 0;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--text-muted);
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s;
+        white-space: nowrap;
+      }
+
+      .tab.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+      }
+
+      .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* --- Forms & Tables --- */
+      .table-actions {
+        margin-bottom: 20px;
+        background: var(--bg-card);
+        padding: 20px;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .form-row {
+        display: flex;
+        gap: 15px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+      }
+
+      .form-col {
+        flex: 1;
+        min-width: 150px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-main);
+      }
+
+      input[type="date"],
+      input[type="text"],
+      select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 14px;
+        background: #f8fafc;
+        outline: none;
+        transition: 0.2s;
+      }
+
+      input:focus {
+        border-color: var(--primary);
+        background: white;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+
+      .data-table {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+
+      .table-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid var(--border);
+        background: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .table-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .table-header .table-actions {
+        margin: 0;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+        background: none;
+        display: flex;
+        gap: 10px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        white-space: nowrap;
+      }
+
+      th {
+        background: #f8fafc;
+        padding: 16px 20px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      td {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+        color: var(--text-main);
+        vertical-align: middle;
+      }
+
+      .status {
+        padding: 6px 12px;
+        border-radius: 30px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        display: inline-block;
+      }
+
+      .status-pending,
+      .status-impounded {
+        background: #fef9c3;
+        color: #854d0e;
+        border: 1px solid #fde047;
+      }
+
+      .status-paid {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #86efac;
+      }
+
+      .status-partial {
+        background: #ffedd5;
+        color: #9a3412;
+        border: 1px solid #fdba74;
+      }
+
+      .status-unpaid {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+        font-size: 14px;
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+
+      .btn-outline {
+        background: white;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+      }
+      .btn-outline:hover {
+        color: var(--text-main);
+        border-color: var(--primary);
+      }
+
+      /* --- Pagination --- */
+      .pagination {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        padding: 15px 25px;
+        border-top: 1px solid var(--border);
+        background: white;
+      }
+
+      .page-btn {
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--border);
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        transition: 0.2s;
+      }
+
+      .page-btn:hover:not(:disabled) {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: #eff6ff;
+      }
+
+      .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .page-info {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin: 0 10px;
+      }
+
+      .loading-spinner {
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 900px) {
+        .main-content {
+          margin-left: 0;
+          padding: 20px;
+          width: 100%;
+        }
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+        .form-row {
+          flex-direction: column;
+          gap: 15px;
+        }
+        .form-col {
+          width: 100%;
+        }
+        .table-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="sidebar-container"></div>
+
+    <div class="main-content">
+      <div class="top-bar">
+        <div class="page-title">
+          <h1>Reports</h1>
+          <p>Generate and view system reports and analytics.</p>
+        </div>
+        <div class="user-menu" onclick="toggleLogoutDropdown()">
+          <div class="user-info">
+            <div class="user-name" id="userDisplayName">Loading...</div>
+            <div class="user-role" id="userRole">Administrator</div>
+          </div>
+          <div class="user-avatar" id="userAvatar">
+            <i class="fas fa-user" id="avatarIcon"></i>
+          </div>
+          <div class="logout-dropdown" id="logoutDropdown">
+            <button class="logout-item" onclick="viewProfile()">
+              <i class="fas fa-user"></i> My Profile
+            </button>
+            <button class="logout-item" onclick="changePassword()">
+              <i class="fas fa-key"></i> Change Password
+            </button>
+            <button
+              class="logout-item"
+              onclick="logout()"
+              style="color: var(--danger)"
+            >
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-label">Total Vehicles Impounded</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statReleased">0</div>
+          <div class="stat-label">Vehicles Released</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statCollections">₱0</div>
+          <div class="stat-label">Total Collections</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statCurrent">0</div>
+          <div class="stat-label">Currently Impounded</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="impounded-reports">
+          Impounded Vehicles
+        </div>
+        <div class="tab" data-tab="released-reports">Released Vehicles</div>
+        <div class="tab" data-tab="payment-reports">Payments</div>
+      </div>
+
+      <div class="tab-content active" id="impounded-reports">
+        <div class="table-actions">
+          <div class="form-row">
+            <div class="form-col">
+              <label>Date From</label>
+              <input type="date" id="dateFrom" />
+            </div>
+            <div class="form-col">
+              <label>Date To</label>
+              <input type="date" id="dateTo" />
+            </div>
+            <div class="form-col" style="flex: 0 0 auto; padding-bottom: 1px">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary" id="filterImpoundedBtn">
+                <i class="fas fa-filter"></i> Apply Filter
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="data-table">
+          <div class="table-header">
+            <div class="table-title">Impounded Vehicles Report</div>
+            <div class="table-actions">
+              <button
+                class="btn btn-outline"
+                onclick="exportTableToCSV('impoundedTable')"
+              >
+                <i class="fas fa-file-excel"></i> Export
+              </button>
+              <button class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> Print
+              </button>
+            </div>
+          </div>
+          <table id="impoundedTable">
+            <thead>
+              <tr>
+                <th>Reference No.</th>
+                <th>Plate Number</th>
+                <th>Vehicle Type</th>
+                <th>Violation</th>
+                <th>Date Impounded</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="impoundedTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 20px">
+                  <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <!-- Impounded Pagination -->
+          <div
+            class="pagination"
+            id="impoundedPagination"
+            style="display: none"
+          >
+            <button class="page-btn" id="impoundedPrevPage">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <span class="page-info" id="impoundedPageInfo">Page 1 of 1</span>
+            <button class="page-btn" id="impoundedNextPage">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="released-reports">
+        <div class="table-actions">
+          <div class="form-row">
+            <div class="form-col">
+              <label>Date From</label>
+              <input type="date" id="dateFromReleased" />
+            </div>
+            <div class="form-col">
+              <label>Date To</label>
+              <input type="date" id="dateToReleased" />
+            </div>
+            <div class="form-col" style="flex: 0 0 auto; padding-bottom: 1px">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary" onclick="filterReleasedByDate()">
+                <i class="fas fa-filter"></i> Apply Filter
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="data-table">
+          <div class="table-header">
+            <div class="table-title">Released Vehicles Report</div>
+            <div class="table-actions">
+              <button
+                class="btn btn-outline"
+                onclick="exportTableToCSV('releasedTable')"
+              >
+                <i class="fas fa-file-excel"></i> Export
+              </button>
+              <button class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> Print
+              </button>
+            </div>
+          </div>
+          <table id="releasedTable">
+            <thead>
+              <tr>
+                <th>Reference No.</th>
+                <th>Plate Number</th>
+                <th>Owner Name</th>
+                <th>Release Date</th>
+                <th>Total Fine</th>
+                <th>Released By</th>
+              </tr>
+            </thead>
+            <tbody id="releasedTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 20px">
+                  <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <!-- Released Pagination -->
+          <div class="pagination" id="releasedPagination" style="display: none">
+            <button class="page-btn" id="releasedPrevPage">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <span class="page-info" id="releasedPageInfo">Page 1 of 1</span>
+            <button class="page-btn" id="releasedNextPage">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="payment-reports">
+        <div class="table-actions">
+          <div class="form-row">
+            <div class="form-col">
+              <label>Date From</label>
+              <input type="date" id="dateFromPayments" />
+            </div>
+            <div class="form-col">
+              <label>Date To</label>
+              <input type="date" id="dateToPayments" />
+            </div>
+            <div class="form-col" style="flex: 0 0 auto; padding-bottom: 1px">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary" onclick="filterPaymentsByDate()">
+                <i class="fas fa-filter"></i> Apply Filter
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="data-table">
+          <div class="table-header">
+            <div class="table-title">Payments Report</div>
+            <div class="table-actions">
+              <button
+                class="btn btn-outline"
+                onclick="exportTableToCSV('paymentTable')"
+              >
+                <i class="fas fa-file-excel"></i> Export
+              </button>
+              <button class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> Print
+              </button>
+            </div>
+          </div>
+          <table id="paymentTable">
+            <thead>
+              <tr>
+                <th>Payment Date</th>
+                <th>Plate Number</th>
+                <th>Violation Code</th>
+                <th>Total Fine</th>
+                <th>Receipt No.</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="paymentTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 20px">
+                  <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <!-- Payments Pagination -->
+          <div class="pagination" id="paymentPagination" style="display: none">
+            <button class="page-btn" id="paymentPrevPage">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <span class="page-info" id="paymentPageInfo">Page 1 of 1</span>
+            <button class="page-btn" id="paymentNextPage">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Firebase Configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyByzd88bcUAq0VdP0w6oB8W_b2AUgoIzXc",
+        authDomain: "vehicle-impound.firebaseapp.com",
+        projectId: "vehicle-impound",
+        storageBucket: "vehicle-impound.firebasestorage.app",
+        messagingSenderId: "69239563292",
+        appId: "1:69239563292:web:281912e8a38301c0feabd9",
+      };
+
+      // Initialize Firebase
+      let db, auth;
+
+      try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        auth = firebase.auth();
+        console.log("Firebase initialized");
+      } catch (e) {
+        console.error("Firebase init error:", e);
+      }
+
+      let allVehicles = [];
+      let allPayments = [];
+      let allReleases = [];
+      let allUsers = {}; // To cache user data
+      let impoundedVehicles = [];
+      let releasedVehiclesData = [];
+
+      // Pagination variables for each tab
+      let impoundedCurrentPage = 1;
+      let releasedCurrentPage = 1;
+      let paymentsCurrentPage = 1;
+      const itemsPerPage = 8;
+
+      // --- HELPER FUNCTIONS ---
+      function formatDate(dateValue) {
+        if (!dateValue) return null;
+
+        if (dateValue.toDate) {
+          return dateValue.toDate().toLocaleDateString();
+        } else {
+          return dateValue;
+        }
+      }
+
+      function getDateString(dateValue) {
+        if (!dateValue) return null;
+
+        if (dateValue.toDate) {
+          return dateValue.toDate().toISOString().split("T")[0];
+        } else {
+          return dateValue.split("T")[0];
+        }
+      }
+
+      // --- INITIALIZATION ---
+      document.addEventListener("DOMContentLoaded", function () {
+        // 1. Fetch Sidebar
+        fetch("sidebar.html")
+          .then((response) => {
+            if (!response.ok) throw new Error("Sidebar not found");
+            return response.text();
+          })
+          .then((data) => {
+            document.getElementById("sidebar-container").innerHTML = data;
+            highlightActiveLink();
+          })
+          .catch((error) => console.error("Error loading sidebar:", error));
+
+        // 2. Initialize App Logic
+        if (auth) {
+          auth.onAuthStateChanged(async (user) => {
+            if (user) {
+              await loadUserData(user.uid);
+              await fetchAllData();
+            } else {
+              window.location.href = "../index.html";
+            }
+          });
+        }
+
+        // Add event listeners for filter buttons
+        document
+          .getElementById("filterImpoundedBtn")
+          .addEventListener("click", filterImpoundedByDate);
+
+        // Set up pagination event listeners
+        setupPaginationListeners();
+      });
+
+      function setupPaginationListeners() {
+        // Impounded pagination
+        document
+          .getElementById("impoundedPrevPage")
+          .addEventListener("click", () => changeImpoundedPage(-1));
+        document
+          .getElementById("impoundedNextPage")
+          .addEventListener("click", () => changeImpoundedPage(1));
+
+        // Released pagination
+        document
+          .getElementById("releasedPrevPage")
+          .addEventListener("click", () => changeReleasedPage(-1));
+        document
+          .getElementById("releasedNextPage")
+          .addEventListener("click", () => changeReleasedPage(1));
+
+        // Payments pagination
+        document
+          .getElementById("paymentPrevPage")
+          .addEventListener("click", () => changePaymentsPage(-1));
+        document
+          .getElementById("paymentNextPage")
+          .addEventListener("click", () => changePaymentsPage(1));
+      }
+
+      function highlightActiveLink() {
+        // Current Page: reports.html
+        const page = "reports.html";
+        const links = document.querySelectorAll(".sidebar-menu a");
+        links.forEach((link) => {
+          const href = link.getAttribute("href");
+          if (href === page) {
+            link.classList.add("active");
+          } else {
+            link.classList.remove("active");
+          }
+        });
+      }
+
+      async function loadUserData(uid) {
+        try {
+          const doc = await db.collection("users").doc(uid).get();
+          if (doc.exists) {
+            const d = doc.data();
+            document.getElementById("userDisplayName").textContent =
+              d.fullName || "User";
+            document.getElementById("userRole").textContent = d.role || "Admin";
+            const initials = (d.fullName || "User")
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
+              .substring(0, 2)
+              .toUpperCase();
+            document.getElementById("userAvatar").innerHTML = initials;
+            const icon = document.getElementById("avatarIcon");
+            if (icon) icon.parentElement.innerHTML = initials;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // Function to get user name by ID
+      async function getUserName(userId) {
+        if (!userId) return "Unknown";
+
+        // Check cache first
+        if (allUsers[userId]) {
+          return allUsers[userId];
+        }
+
+        try {
+          const userDoc = await db.collection("users").doc(userId).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            const userName = userData.fullName || userData.email || "Unknown";
+            allUsers[userId] = userName;
+            return userName;
+          }
+          return "Unknown";
+        } catch (error) {
+          console.error("Error fetching user:", error);
+          return "Unknown";
+        }
+      }
+
+      async function fetchAllData() {
+        try {
+          console.log("Fetching all data...");
+
+          // Fetch all users first for caching
+          const usersSnap = await db.collection("users").get();
+          usersSnap.forEach((doc) => {
+            const userData = doc.data();
+            allUsers[doc.id] = userData.fullName || userData.email || "Unknown";
+          });
+
+          // Fetch Impounded Vehicles
+          const vSnap = await db
+            .collection("impoundedVehicles")
+            .orderBy("impoundDate", "desc")
+            .get();
+          allVehicles = vSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          console.log(`Fetched ${allVehicles.length} vehicles`);
+
+          // Fetch Releases (from separate collection)
+          const rSnap = await db
+            .collection("releases")
+            .orderBy("releaseDate", "desc")
+            .get();
+          allReleases = rSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          console.log(`Fetched ${allReleases.length} releases`);
+
+          // Fetch Payments (from separate collection) - Only paid and partial
+          const pSnap = await db
+            .collection("payments")
+            .where("paymentStatus", "in", ["paid", "partial"])
+            .orderBy("paymentDate", "desc")
+            .get();
+          allPayments = pSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          console.log(
+            `Fetched ${allPayments.length} payments (paid/partial only)`
+          );
+
+          // Get released vehicles: vehicles that have a corresponding release record
+          const releasedVehicleIds = new Set(
+            allReleases.map((r) => r.vehicleId)
+          );
+          const releasedVehiclesWithDetails = [];
+
+          for (const release of allReleases) {
+            const vehicle = allVehicles.find((v) => v.id === release.vehicleId);
+            if (vehicle) {
+              // Get releaser name
+              const releaserName = await getUserName(release.releasedBy);
+
+              releasedVehiclesWithDetails.push({
+                ...vehicle,
+                releaseId: release.id,
+                releaseDate: release.releaseDate,
+                releasedBy: release.releasedBy,
+                releasedByName: releaserName,
+                notes: release.notes,
+                releaseStatus: release.status,
+              });
+            }
+          }
+
+          releasedVehiclesData = releasedVehiclesWithDetails;
+
+          // Get impounded vehicles: vehicles that don't have a release record
+          impoundedVehicles = allVehicles.filter(
+            (v) => !releasedVehicleIds.has(v.id)
+          );
+
+          // Calculate Stats
+          const totalImpounded = allVehicles.length;
+          const releasedCount = releasedVehiclesData.length;
+          const currentCount = impoundedVehicles.length;
+
+          // Calculate total collections from payments with status "paid" or "partial"
+          const validPayments = allPayments.filter(
+            (p) =>
+              p.paymentStatus &&
+              (p.paymentStatus.toLowerCase() === "paid" ||
+                p.paymentStatus.toLowerCase() === "partial")
+          );
+          const totalCollections = validPayments.reduce(
+            (sum, p) => sum + (Number(p.totalFine) || 0),
+            0
+          );
+
+          // Update stats
+          document.getElementById("statTotal").textContent = totalImpounded;
+          document.getElementById("statReleased").textContent = releasedCount;
+          document.getElementById("statCurrent").textContent = currentCount;
+          document.getElementById("statCollections").textContent =
+            "₱" + totalCollections.toLocaleString();
+
+          // Initial Render
+          impoundedCurrentPage = 1;
+          releasedCurrentPage = 1;
+          paymentsCurrentPage = 1;
+          renderImpounded(impoundedVehicles);
+          renderReleased(releasedVehiclesData);
+          renderPayments(allPayments);
+        } catch (error) {
+          console.error("Error fetching data:", error);
+          // Show error in tables
+          document.getElementById(
+            "impoundedTableBody"
+          ).innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--danger);">Error loading data: ${error.message}</td></tr>`;
+          document.getElementById(
+            "releasedTableBody"
+          ).innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--danger);">Error loading data: ${error.message}</td></tr>`;
+          document.getElementById(
+            "paymentTableBody"
+          ).innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--danger);">Error loading data: ${error.message}</td></tr>`;
+        }
+      }
+
+      function renderImpounded(data) {
+        const tbody = document.getElementById("impoundedTableBody");
+        if (data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#666;">No impounded vehicles found</td></tr>`;
+          document.getElementById("impoundedPagination").style.display = "none";
+          return;
+        }
+
+        // Calculate pagination
+        const start = (impoundedCurrentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = data.slice(start, end);
+        const totalPages = Math.ceil(data.length / itemsPerPage);
+
+        tbody.innerHTML = pageData
+          .map(
+            (v) => `
+            <tr>
+                <td>${
+                  v.referenceNumber || v.id.substring(0, 8).toUpperCase()
+                }</td>
+                <td><strong>${v.plateNumber || "N/A"}</strong></td>
+                <td>${v.vehicleType || "N/A"}</td>
+                <td>${
+                  v.violationDescription ||
+                  v.violationCode ||
+                  "Traffic Violation"
+                }</td>
+                <td>${formatDate(v.impoundDate) || "N/A"}</td>
+                <td><span class="status status-impounded">Impounded</span></td>
+            </tr>
+        `
+          )
+          .join("");
+
+        // Update pagination
+        updateImpoundedPagination(totalPages);
+      }
+
+      function updateImpoundedPagination(totalPages) {
+        const pagination = document.getElementById("impoundedPagination");
+        const prevBtn = document.getElementById("impoundedPrevPage");
+        const nextBtn = document.getElementById("impoundedNextPage");
+        const pageInfo = document.getElementById("impoundedPageInfo");
+
+        if (totalPages > 1) {
+          pagination.style.display = "flex";
+          pageInfo.textContent = `Page ${impoundedCurrentPage} of ${totalPages}`;
+          prevBtn.disabled = impoundedCurrentPage === 1;
+          nextBtn.disabled = impoundedCurrentPage === totalPages;
+        } else {
+          pagination.style.display = "none";
+        }
+      }
+
+      function changeImpoundedPage(dir) {
+        const totalPages = Math.ceil(impoundedVehicles.length / itemsPerPage);
+        impoundedCurrentPage += dir;
+        if (impoundedCurrentPage < 1) impoundedCurrentPage = 1;
+        if (impoundedCurrentPage > totalPages)
+          impoundedCurrentPage = totalPages;
+        renderImpounded(impoundedVehicles);
+      }
+
+      async function renderReleased(data) {
+        const tbody = document.getElementById("releasedTableBody");
+        if (data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#666;">No released vehicles found</td></tr>`;
+          document.getElementById("releasedPagination").style.display = "none";
+          return;
+        }
+
+        // Calculate pagination
+        const start = (releasedCurrentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = data.slice(start, end);
+        const totalPages = Math.ceil(data.length / itemsPerPage);
+
+        // Render data (user names are already fetched)
+        tbody.innerHTML = pageData
+          .map(
+            (v) => `
+            <tr>
+                <td>${
+                  v.referenceNumber || v.id.substring(0, 8).toUpperCase()
+                }</td>
+                <td>${v.plateNumber || "N/A"}</td>
+                <td>${v.ownerName || "N/A"}</td>
+                <td>${formatDate(v.releaseDate) || "N/A"}</td>
+                <td>₱${(v.fineAmount || 0).toLocaleString()}</td>
+                <td>${v.releasedByName || v.releasedBy || "Admin"}</td>
+            </tr>
+        `
+          )
+          .join("");
+
+        // Update pagination
+        updateReleasedPagination(totalPages);
+      }
+
+      function updateReleasedPagination(totalPages) {
+        const pagination = document.getElementById("releasedPagination");
+        const prevBtn = document.getElementById("releasedPrevPage");
+        const nextBtn = document.getElementById("releasedNextPage");
+        const pageInfo = document.getElementById("releasedPageInfo");
+
+        if (totalPages > 1) {
+          pagination.style.display = "flex";
+          pageInfo.textContent = `Page ${releasedCurrentPage} of ${totalPages}`;
+          prevBtn.disabled = releasedCurrentPage === 1;
+          nextBtn.disabled = releasedCurrentPage === totalPages;
+        } else {
+          pagination.style.display = "none";
+        }
+      }
+
+      function changeReleasedPage(dir) {
+        const totalPages = Math.ceil(
+          releasedVehiclesData.length / itemsPerPage
+        );
+        releasedCurrentPage += dir;
+        if (releasedCurrentPage < 1) releasedCurrentPage = 1;
+        if (releasedCurrentPage > totalPages) releasedCurrentPage = totalPages;
+        renderReleased(releasedVehiclesData);
+      }
+
+      async function renderPayments(data) {
+        const tbody = document.getElementById("paymentTableBody");
+
+        // Filter to only show paid and partial payments
+        const filteredPayments = data.filter((p) => {
+          const status = (p.paymentStatus || "").toLowerCase();
+          return status === "paid" || status === "partial";
+        });
+
+        if (filteredPayments.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#666;">No paid or partial payments recorded</td></tr>`;
+          document.getElementById("paymentPagination").style.display = "none";
+          return;
+        }
+
+        // Calculate pagination
+        const start = (paymentsCurrentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = filteredPayments.slice(start, end);
+        const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+
+        // Create HTML for payments
+        let paymentsHTML = "";
+
+        for (const p of pageData) {
+          // Find vehicle for this payment
+          const vehicle = allVehicles.find((v) => v.id === p.vehicleId) || {};
+
+          // Determine status class
+          const status = (p.paymentStatus || "").toLowerCase();
+          const statusClass =
+            status === "paid" ? "status-paid" : "status-partial";
+          const statusText = status === "paid" ? "Paid" : "Partial";
+
+          paymentsHTML += `
+            <tr>
+                <td>${
+                  formatDate(p.paymentDate) || new Date().toLocaleDateString()
+                }</td>
+                <td>${vehicle.plateNumber || "Unknown"}</td>
+                <td>${p.violationCode || "N/A"}</td>
+                <td style="color:var(--success); font-weight:bold">₱${(
+                  p.totalFine || 0
+                ).toLocaleString()}</td>
+                <td>${p.receiptNumber || p.receipt || "N/A"}</td>
+                <td><span class="status ${statusClass}">${statusText}</span></td>
+            </tr>
+          `;
+        }
+
+        tbody.innerHTML = paymentsHTML;
+
+        // Update pagination
+        updatePaymentsPagination(totalPages);
+      }
+
+      function updatePaymentsPagination(totalPages) {
+        const pagination = document.getElementById("paymentPagination");
+        const prevBtn = document.getElementById("paymentPrevPage");
+        const nextBtn = document.getElementById("paymentNextPage");
+        const pageInfo = document.getElementById("paymentPageInfo");
+
+        if (totalPages > 1) {
+          pagination.style.display = "flex";
+          pageInfo.textContent = `Page ${paymentsCurrentPage} of ${totalPages}`;
+          prevBtn.disabled = paymentsCurrentPage === 1;
+          nextBtn.disabled = paymentsCurrentPage === totalPages;
+        } else {
+          pagination.style.display = "none";
+        }
+      }
+
+      function changePaymentsPage(dir) {
+        const filteredPayments = allPayments.filter((p) => {
+          const status = (p.paymentStatus || "").toLowerCase();
+          return status === "paid" || status === "partial";
+        });
+        const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+        paymentsCurrentPage += dir;
+        if (paymentsCurrentPage < 1) paymentsCurrentPage = 1;
+        if (paymentsCurrentPage > totalPages) paymentsCurrentPage = totalPages;
+        renderPayments(allPayments);
+      }
+
+      // Filter Functions
+      function filterImpoundedByDate() {
+        const start = document.getElementById("dateFrom").value;
+        const end = document.getElementById("dateTo").value;
+
+        let filtered = impoundedVehicles;
+        if (start && end) {
+          filtered = impoundedVehicles.filter((v) => {
+            const impoundDate = v.impoundDate;
+            if (!impoundDate) return false;
+
+            const dateStr = getDateString(impoundDate);
+            return dateStr >= start && dateStr <= end;
+          });
+        }
+        impoundedCurrentPage = 1; // Reset to first page
+        renderImpounded(filtered);
+      }
+
+      function filterReleasedByDate() {
+        const start = document.getElementById("dateFromReleased").value;
+        const end = document.getElementById("dateToReleased").value;
+
+        let filtered = releasedVehiclesData;
+        if (start && end) {
+          filtered = releasedVehiclesData.filter((v) => {
+            const releaseDate = v.releaseDate;
+            if (!releaseDate) return false;
+
+            const dateStr = getDateString(releaseDate);
+            return dateStr >= start && dateStr <= end;
+          });
+        }
+        releasedCurrentPage = 1; // Reset to first page
+        renderReleased(filtered);
+      }
+
+      function filterPaymentsByDate() {
+        const start = document.getElementById("dateFromPayments").value;
+        const end = document.getElementById("dateToPayments").value;
+
+        // Filter from all payments but only show paid/partial
+        let filtered = allPayments.filter((p) => {
+          const status = (p.paymentStatus || "").toLowerCase();
+          return status === "paid" || status === "partial";
+        });
+
+        if (start && end) {
+          filtered = filtered.filter((p) => {
+            const paymentDate = p.paymentDate;
+            if (!paymentDate) return false;
+
+            const dateStr = getDateString(paymentDate);
+            return dateStr >= start && dateStr <= end;
+          });
+        }
+        paymentsCurrentPage = 1; // Reset to first page
+        renderPayments(filtered);
+      }
+
+      // Logout
+      async function logout() {
+        if (confirm("Logout?")) {
+          await auth.signOut();
+          window.location.href = "../index.html";
+        }
+      }
+
+      function toggleLogoutDropdown() {
+        const d = document.getElementById("logoutDropdown");
+        d.style.display = d.style.display === "block" ? "none" : "block";
+      }
+
+      // Close dropdown
+      window.onclick = function (e) {
+        if (!e.target.closest(".user-menu")) {
+          const dropdown = document.getElementById("logoutDropdown");
+          if (dropdown) dropdown.style.display = "none";
+        }
+      };
+
+      // CSV Export
+      window.exportTableToCSV = function (tableId) {
+        let csv = [];
+        let rows = document.querySelectorAll(`#${tableId} tr`);
+        for (let i = 0; i < rows.length; i++) {
+          let row = [],
+            cols = rows[i].querySelectorAll("td, th");
+          for (let j = 0; j < cols.length; j++)
+            row.push('"' + cols[j].innerText + '"');
+          csv.push(row.join(","));
+        }
+        downloadCSV(csv.join("\n"), `report_${tableId}.csv`);
+      };
+
+      function downloadCSV(csv, filename) {
+        let csvFile = new Blob([csv], { type: "text/csv" });
+        let downloadLink = document.createElement("a");
+        downloadLink.download = filename;
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+        downloadLink.style.display = "none";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+      }
+
+      // Tabs
+      document.querySelectorAll(".tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const tabContainer = tab.closest(".tabs");
+          tabContainer
+            .querySelectorAll(".tab")
+            .forEach((t) => t.classList.remove("active"));
+          tabContainer.parentElement
+            .querySelectorAll(".tab-content")
+            .forEach((c) => c.classList.remove("active"));
+          tab.classList.add("active");
+          const tabId = tab.getAttribute("data-tab");
+          tabContainer.parentElement
+            .querySelector(`#${tabId}`)
+            .classList.add("active");
+        });
+      });
+
+      // Placeholder functions for profile/password
+      function viewProfile() {
+        alert("Profile view functionality would go here");
+      }
+
+      function changePassword() {
+        alert("Change password functionality would go here");
+      }
+    </script>
+  </body>
+</html>

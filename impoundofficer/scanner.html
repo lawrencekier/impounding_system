@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Vehicle Scanner - VIMS</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+    <style>
+      :root {
+        /* VIMS Palette */
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --bg-body: #f1f5f9;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --success: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --border: #e2e8f0;
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --radius: 12px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Inter", "Segoe UI", sans-serif;
+      }
+      body {
+        background-color: var(--bg-body);
+        min-height: 100vh;
+        color: var(--text-main);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .logo-icon {
+        font-size: 40px;
+        color: var(--primary);
+        margin-bottom: 10px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 5px;
+      }
+
+      .header p {
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      /* Card Style */
+      .card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+
+      /* Scanner Section */
+      .scanner-section {
+        padding: 30px 20px;
+        text-align: center;
+      }
+
+      #reader {
+        width: 100%;
+        border-radius: var(--radius);
+        overflow: hidden;
+        margin-bottom: 20px;
+        border: 1px solid var(--border);
+      }
+
+      /* Manual Input Section */
+      .manual-section {
+        padding: 20px;
+        display: none;
+        text-align: center;
+      }
+
+      .search-options {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      .search-option-btn {
+        flex: 1;
+        padding: 10px;
+        background: var(--bg-body);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .search-option-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+
+      input[type="text"] {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 16px;
+        outline: none;
+        transition: 0.2s;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+
+      input[type="text"]:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+
+      /* Result Section */
+      .result-section {
+        display: none;
+      }
+
+      .vehicle-header {
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        color: white;
+        padding: 25px;
+        text-align: center;
+        position: relative;
+      }
+
+      .plate-number {
+        font-size: 32px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+      }
+
+      .vehicle-model {
+        font-size: 14px;
+        opacity: 0.9;
+        font-weight: 500;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-top: 15px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .info-group {
+        padding: 25px;
+      }
+
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+      }
+
+      .info-row:last-child {
+        border-bottom: none;
+      }
+
+      .info-label {
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      .info-value {
+        color: var(--text-main);
+        font-weight: 600;
+        text-align: right;
+      }
+
+      .violation-box {
+        background: #fef2f2;
+        border: 1px dashed #fca5a5;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+      }
+
+      .violation-title {
+        color: var(--danger);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+
+      .violation-desc {
+        color: #7f1d1d;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .fine-total {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px dashed #fca5a5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 700;
+        color: var(--danger);
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 14px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: 0.2s;
+        border: none;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+      }
+
+      .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+      }
+
+      .btn-outline {
+        background: white;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+      }
+
+      .btn-outline:hover {
+        border-color: var(--text-main);
+        color: var(--text-main);
+      }
+
+      /* States */
+      .loading {
+        padding: 40px;
+        text-align: center;
+        color: var(--text-muted);
+      }
+
+      .error-message {
+        background: #fef2f2;
+        color: var(--danger);
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 14px;
+        border: 1px solid #fecaca;
+      }
+
+      /* Animation */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .result-section {
+        animation: fadeIn 0.4s ease-out;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <i class="fas fa-shield-alt logo-icon"></i>
+        <h1>Vehicle Details</h1>
+        <p>Scan QR code or enter reference number to view record</p>
+      </div>
+
+      <div class="card scanner-section" id="scannerSection">
+        <div id="reader"></div>
+        <div style="margin-top: 20px">
+          <p
+            style="
+              color: var(--text-muted);
+              font-size: 13px;
+              margin-bottom: 15px;
+            "
+          >
+            Having trouble scanning?
+          </p>
+          <button class="btn btn-outline" onclick="showManualInput()">
+            <i class="fas fa-keyboard"></i> Enter Details Manually
+          </button>
+        </div>
+      </div>
+
+      <div class="card manual-section" id="manualSection">
+        <h3 style="margin-bottom: 15px; color: var(--text-main)">
+          Manual Entry
+        </h3>
+
+        <div class="search-options">
+          <button
+            class="search-option-btn active"
+            onclick="setSearchType('reference')"
+          >
+            Reference No.
+          </button>
+          <button class="search-option-btn" onclick="setSearchType('plate')">
+            Plate No.
+          </button>
+          <button
+            class="search-option-btn"
+            onclick="setSearchType('documentId')"
+          >
+            Document ID
+          </button>
+        </div>
+
+        <input
+          type="text"
+          id="manualInput"
+          placeholder="Enter Reference Number (e.g., VIMS-2024-001)"
+        />
+        <button class="btn btn-primary" onclick="processManualInput()">
+          View Details
+        </button>
+        <button class="btn btn-outline" onclick="hideManualInput()">
+          Back to Scanner
+        </button>
+      </div>
+
+      <div class="result-section" id="resultSection">
+        <div class="card">
+          <div id="resultContent">
+            <div class="loading">
+              <i class="fas fa-circle-notch fa-spin"></i> Loading...
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="resetScanner()">
+          <i class="fas fa-qrcode"></i> Scan Another Vehicle
+        </button>
+      </div>
+    </div>
+
+    <script type="module">
+      // Import Firebase
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        collection,
+        query,
+        where,
+        getDocs,
+      } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+
+      // Your Firebase config
+      const firebaseConfig = {
+        apiKey: "AIzaSyByzd88bcUAq0VdP0w6oB8W_b2AUgoIzXc",
+        authDomain: "vehicle-impound.firebaseapp.com",
+        projectId: "vehicle-impound",
+        storageBucket: "vehicle-impound.appspot.com",
+        messagingSenderId: "69239563292",
+        appId: "1:69239563292:web:281912e8a38301c0feabd9",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      let scanner = null;
+      let currentSearchType = "reference"; // 'reference', 'plate', or 'documentId'
+
+      // Check for vehicle ID in URL on page load
+      const urlParams = new URLSearchParams(window.location.search);
+      const vehicleId = urlParams.get("id");
+
+      if (vehicleId) {
+        // If ID is in URL, load vehicle data immediately
+        loadVehicleByDocumentId(vehicleId);
+      } else {
+        // Initialize scanner if no ID
+        startScanner();
+      }
+
+      // Helper function to format date from Firestore
+      function formatFirestoreDate(dateInput) {
+        if (!dateInput) return "N/A";
+
+        try {
+          // If it's a Firestore Timestamp (has toDate method)
+          if (dateInput && typeof dateInput.toDate === "function") {
+            const date = dateInput.toDate();
+            return date.toLocaleDateString("en-PH", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            });
+          }
+
+          // If it's already a Date object
+          if (dateInput instanceof Date) {
+            return dateInput.toLocaleDateString("en-PH", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            });
+          }
+
+          // If it's a string, try to parse it
+          if (typeof dateInput === "string") {
+            const date = new Date(dateInput);
+            if (!isNaN(date.getTime())) {
+              return date.toLocaleDateString("en-PH", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              });
+            }
+          }
+
+          // If it's a number (timestamp)
+          if (typeof dateInput === "number") {
+            const date = new Date(dateInput);
+            return date.toLocaleDateString("en-PH", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            });
+          }
+
+          // Return as-is if we can't parse it
+          return String(dateInput);
+        } catch (error) {
+          console.error("Error formatting date:", error, dateInput);
+          return "Invalid Date";
+        }
+      }
+
+      // Function to set search type
+      window.setSearchType = function (type) {
+        currentSearchType = type;
+        const buttons = document.querySelectorAll(".search-option-btn");
+        buttons.forEach((btn) => btn.classList.remove("active"));
+
+        if (type === "reference") {
+          buttons[0].classList.add("active");
+          document.getElementById("manualInput").placeholder =
+            "Enter Reference Number (e.g., VIMS-2024-001)";
+        } else if (type === "plate") {
+          buttons[1].classList.add("active");
+          document.getElementById("manualInput").placeholder =
+            "Enter Plate Number (e.g., ABC123)";
+        } else {
+          buttons[2].classList.add("active");
+          document.getElementById("manualInput").placeholder =
+            "Enter Document ID";
+        }
+      };
+
+      // Function to search by reference number (like in the officer dashboard)
+      async function searchByReferenceNumber(refNumber) {
+        try {
+          const vehiclesRef = collection(db, "impoundedVehicles");
+          const q = query(
+            vehiclesRef,
+            where("referenceNumber", "==", refNumber)
+          );
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+            // Get the first matching document
+            const docSnap = querySnapshot.docs[0];
+            return {
+              id: docSnap.id,
+              data: docSnap.data(),
+            };
+          } else {
+            return null; // No vehicle found
+          }
+        } catch (error) {
+          console.error("Error searching by reference number:", error);
+          throw error;
+        }
+      }
+
+      // Function to search by plate number
+      async function searchByPlateNumber(plateNumber) {
+        try {
+          const vehiclesRef = collection(db, "impoundedVehicles");
+          const q = query(
+            vehiclesRef,
+            where("plateNumber", "==", plateNumber.toUpperCase())
+          );
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+            // Get the most recent document
+            const docSnap = querySnapshot.docs[0];
+            return {
+              id: docSnap.id,
+              data: docSnap.data(),
+            };
+          } else {
+            return null; // No vehicle found
+          }
+        } catch (error) {
+          console.error("Error searching by plate number:", error);
+          throw error;
+        }
+      }
+
+      // Function to load vehicle by document ID
+      async function loadVehicleByDocumentId(vehicleId) {
+        try {
+          showLoading();
+          const docRef = doc(db, "impoundedVehicles", vehicleId);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            const vehicleData = docSnap.data();
+            displayVehicleInfo(vehicleData, docSnap.id);
+          } else {
+            showError("Vehicle not found in database. Please check the ID.");
+          }
+        } catch (error) {
+          console.error("Error loading vehicle:", error);
+          showError("Error loading vehicle data: " + error.message);
+        }
+      }
+
+      // Function to process manual input
+      async function processManualInput() {
+        const inputValue = document.getElementById("manualInput").value.trim();
+
+        if (!inputValue) {
+          alert("Please enter a value to search");
+          return;
+        }
+
+        try {
+          showLoading();
+
+          let vehicleResult = null;
+
+          if (currentSearchType === "reference") {
+            // Search by reference number
+            vehicleResult = await searchByReferenceNumber(inputValue);
+          } else if (currentSearchType === "plate") {
+            // Search by plate number
+            vehicleResult = await searchByPlateNumber(inputValue);
+          } else {
+            // Search by document ID
+            try {
+              const docSnap = await getDoc(
+                doc(db, "impoundedVehicles", inputValue)
+              );
+              if (docSnap.exists()) {
+                vehicleResult = {
+                  id: docSnap.id,
+                  data: docSnap.data(),
+                };
+              } else {
+                vehicleResult = null;
+              }
+            } catch (error) {
+              vehicleResult = null;
+            }
+          }
+
+          if (vehicleResult && vehicleResult.data) {
+            displayVehicleInfo(vehicleResult.data, vehicleResult.id);
+          } else {
+            showError(
+              `No vehicle found with this ${
+                currentSearchType === "reference"
+                  ? "reference number"
+                  : currentSearchType === "plate"
+                  ? "plate number"
+                  : "document ID"
+              }.`
+            );
+          }
+        } catch (error) {
+          console.error("Error processing manual input:", error);
+          showError("Error searching vehicle: " + error.message);
+        }
+      }
+
+      function showLoading() {
+        document.getElementById("scannerSection").style.display = "none";
+        document.getElementById("manualSection").style.display = "none";
+        document.getElementById("resultSection").style.display = "block";
+        document.getElementById("resultContent").innerHTML =
+          '<div class="loading"><i class="fas fa-circle-notch fa-spin"></i> Loading information...</div>';
+      }
+
+      function displayVehicleInfo(data, docId) {
+        // Stop scanner if running
+        if (scanner) {
+          scanner.clear();
+        }
+
+        document.getElementById("scannerSection").style.display = "none";
+        document.getElementById("manualSection").style.display = "none";
+        document.getElementById("resultSection").style.display = "block";
+
+        const resultContent = document.getElementById("resultContent");
+
+        // Format Currency
+        const fine = (data.fineAmount || 0).toLocaleString();
+
+        // Status Logic
+        const status = (data.status || "Impounded").toUpperCase();
+
+        // Get the actual referenceNumber from the data
+        const referenceNumber =
+          data.referenceNumber || `#${docId.substring(0, 8).toUpperCase()}`;
+
+        // Format the impound date properly
+        const formattedDate = formatFirestoreDate(data.impoundDate);
+
+        // Debug log to see what's in the data
+        console.log("Vehicle Data:", data);
+        console.log("Impound Date raw:", data.impoundDate);
+        console.log("Impound Date formatted:", formattedDate);
+
+        resultContent.innerHTML = `
+                <div class="vehicle-header">
+                    <div class="plate-number">${data.plateNumber || "N/A"}</div>
+                    <div class="vehicle-model">${data.vehicleColor || ""} ${
+          data.vehicleModel || ""
+        } ${data.vehicleType || ""}</div>
+                    <span class="status-badge">${status}</span>
+                </div>
+                
+                <div class="info-group">
+                    <div class="info-row">
+                        <span class="info-label">Reference No.</span>
+                        <span class="info-value" style="font-family: monospace; font-weight: bold; color: var(--primary);">${referenceNumber}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Owner Name</span>
+                        <span class="info-value">${
+                          data.ownerName || "N/A"
+                        }</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Impound Date</span>
+                        <span class="info-value">${formattedDate}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Officer</span>
+                        <span class="info-value">${
+                          data.impoundingOfficerName || "Authorized Officer"
+                        }</span>
+                    </div>
+
+                    ${
+                      data.conditionNotes
+                        ? `
+                    <div class="info-row" style="display:block; margin-top:10px;">
+                        <span class="info-label" style="display:block; margin-bottom:5px;">Condition Notes:</span>
+                        <div style="font-size:13px; color:var(--text-main); background:#f8fafc; padding:10px; border-radius:6px;">
+                            ${data.conditionNotes}
+                        </div>
+                    </div>`
+                        : ""
+                    }
+
+                    <div class="violation-box">
+                        <div class="violation-title">Violation Details</div>
+                        <div class="violation-desc">
+                            ${
+                              data.violationDescription ||
+                              data.violationCode ||
+                              "No description available"
+                            }
+                        </div>
+                        <div class="fine-total">
+                            <span>Total Fine</span>
+                            <span>₱${fine}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+      }
+
+      function showError(message) {
+        document.getElementById("resultContent").innerHTML = `
+                <div style="padding:30px; text-align:center;">
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i> ${message}
+                    </div>
+                </div>
+            `;
+        document.getElementById("resultSection").style.display = "block";
+        document.getElementById("scannerSection").style.display = "none";
+      }
+
+      // --- Expose functions to window for HTML buttons ---
+      window.showManualInput = function () {
+        document.getElementById("scannerSection").style.display = "none";
+        document.getElementById("manualSection").style.display = "block";
+        if (scanner) scanner.pause();
+        document.getElementById("manualInput").focus();
+      };
+
+      window.hideManualInput = function () {
+        document.getElementById("manualSection").style.display = "none";
+        document.getElementById("scannerSection").style.display = "block";
+        if (scanner) scanner.resume();
+      };
+
+      window.processManualInput = processManualInput;
+
+      window.resetScanner = function () {
+        document.getElementById("resultSection").style.display = "none";
+        document.getElementById("scannerSection").style.display = "block";
+        document.getElementById("manualInput").value = "";
+
+        // Reload scanner
+        if (scanner) {
+          scanner.clear().then(() => {
+            startScanner();
+          });
+        } else {
+          startScanner();
+        }
+
+        // Clear URL param without refreshing
+        window.history.pushState({}, document.title, window.location.pathname);
+      };
+
+      // QR Scanner functions
+      function onScanSuccess(decodedText, decodedResult) {
+        try {
+          // If it's a URL with ID parameter
+          if (decodedText.includes("id=")) {
+            const url = new URL(decodedText);
+            const vehicleId = url.searchParams.get("id");
+            if (vehicleId) {
+              loadVehicleByDocumentId(vehicleId);
+              return;
+            }
+          }
+
+          // If it's a reference number (contains VIMS prefix or similar pattern)
+          if (
+            decodedText.includes("VIMS-") ||
+            decodedText.match(/^[A-Z0-9\-]+$/)
+          ) {
+            // Try to search by reference number first
+            searchByReferenceNumber(decodedText).then((result) => {
+              if (result) {
+                displayVehicleInfo(result.data, result.id);
+              } else {
+                // If not found by reference, try as document ID
+                loadVehicleByDocumentId(decodedText);
+              }
+            });
+            return;
+          }
+
+          // If it's just the raw document ID
+          if (
+            decodedText.length > 5 &&
+            decodedText.length < 30 &&
+            !decodedText.includes("http")
+          ) {
+            loadVehicleByDocumentId(decodedText);
+            return;
+          }
+
+          alert("Invalid QR Format. Please scan a valid VIMS QR Code.");
+        } catch (error) {
+          console.error("Scan Error", error);
+          alert("Error processing QR code.");
+        }
+      }
+
+      function startScanner() {
+        // Only start if div exists and is visible
+        if (document.getElementById("reader")) {
+          scanner = new Html5QrcodeScanner("reader", {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+            showTorchButtonIfSupported: true,
+          });
+          scanner.render(onScanSuccess);
+        }
+      }
+    </script>
+  </body>
+</html>

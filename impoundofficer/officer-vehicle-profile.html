@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vehicle Profile - LTO VIS</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --lto-blue: #0056a6;
+        --lto-light-blue: #e6f0ff;
+        --lto-dark-blue: #003d7a;
+        --lto-yellow: #ffcc00;
+        --lto-white: #ffffff;
+        --lto-gray: #f5f5f5;
+        --lto-dark-gray: #333333;
+        --lto-light-gray: #e0e0e0;
+        --lto-green: #28a745;
+        --lto-red: #dc3545;
+        --lto-orange: #fd7e14;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background-color: #f8f9fa;
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        width: 250px;
+        background-color: var(--lto-dark-blue);
+        color: var(--lto-white);
+        height: 100vh;
+        position: fixed;
+        transition: all 0.3s;
+        z-index: 1000;
+      }
+
+      .sidebar-header {
+        padding: 20px;
+        background-color: var(--lto-blue);
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .sidebar-header .logo {
+        width: 40px;
+        height: 40px;
+        margin-right: 10px;
+      }
+
+      .sidebar-header h2 {
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .sidebar-menu {
+        padding: 15px 0;
+      }
+
+      .sidebar-menu ul {
+        list-style: none;
+      }
+
+      .sidebar-menu li {
+        margin-bottom: 5px;
+      }
+
+      .sidebar-menu a {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+        transition: all 0.3s;
+        border-left: 4px solid transparent;
+      }
+
+      .sidebar-menu a:hover,
+      .sidebar-menu a.active {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: var(--lto-white);
+        border-left-color: var(--lto-yellow);
+      }
+
+      .sidebar-menu i {
+        margin-right: 10px;
+        width: 20px;
+        text-align: center;
+      }
+
+      .main-content {
+        flex: 1;
+        margin-left: 250px;
+        padding: 20px;
+        transition: all 0.3s;
+      }
+
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--lto-light-gray);
+      }
+
+      .page-title h1 {
+        font-size: 24px;
+        color: var(--lto-dark-blue);
+        margin-bottom: 5px;
+      }
+
+      .page-title p {
+        color: var(--lto-dark-gray);
+        font-size: 14px;
+      }
+
+      .user-menu {
+        display: flex;
+        align-items: center;
+      }
+
+      .user-info {
+        text-align: right;
+        margin-right: 15px;
+      }
+
+      .user-name {
+        font-weight: 600;
+        color: var(--lto-dark-blue);
+      }
+
+      .user-role {
+        font-size: 12px;
+        color: var(--lto-dark-gray);
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--lto-blue);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+      }
+
+      .vehicle-header {
+        background-color: var(--lto-white);
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        padding: 25px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .vehicle-info {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .vehicle-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        background-color: var(--lto-light-blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--lto-blue);
+        font-size: 24px;
+      }
+
+      .vehicle-details h2 {
+        color: var(--lto-dark-blue);
+        margin-bottom: 5px;
+      }
+
+      .vehicle-details p {
+        color: var(--lto-dark-gray);
+        font-size: 14px;
+      }
+
+      .status-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+      }
+
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--lto-light-gray);
+        margin-bottom: 20px;
+        background-color: var(--lto-white);
+        border-radius: 8px 8px 0 0;
+      }
+
+      .tab {
+        padding: 15px 25px;
+        cursor: pointer;
+        font-weight: 500;
+        color: var(--lto-dark-gray);
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s;
+      }
+
+      .tab.active {
+        color: var(--lto-blue);
+        border-bottom-color: var(--lto-blue);
+      }
+
+      .tab-content {
+        display: none;
+        background-color: var(--lto-white);
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        padding: 25px;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .info-card {
+        background-color: var(--lto-gray);
+        border-radius: 8px;
+        padding: 20px;
+      }
+
+      .info-card h3 {
+        color: var(--lto-dark-blue);
+        margin-bottom: 15px;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+      }
+
+      .info-card h3 i {
+        margin-right: 10px;
+        color: var(--lto-blue);
+      }
+
+      .info-item {
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .info-label {
+        color: var(--lto-dark-gray);
+        font-weight: 500;
+      }
+
+      .info-value {
+        color: var(--lto-dark-blue);
+        font-weight: 600;
+      }
+
+      .photo-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .photo-item {
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--lto-light-gray);
+      }
+
+      .photo-item img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        display: block;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--lto-dark-gray);
+        font-weight: 500;
+      }
+
+      textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid var(--lto-light-gray);
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s;
+        resize: vertical;
+      }
+
+      textarea:focus {
+        border-color: var(--lto-blue);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 86, 166, 0.1);
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        border: none;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        transition: all 0.3s;
+      }
+
+      .btn i {
+        margin-right: 8px;
+      }
+
+      .btn-primary {
+        background-color: var(--lto-blue);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--lto-dark-blue);
+      }
+
+      .btn-outline {
+        background-color: transparent;
+        border: 1px solid var(--lto-blue);
+        color: var(--lto-blue);
+      }
+
+      .btn-outline:hover {
+        background-color: var(--lto-light-blue);
+      }
+
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          width: 70px;
+        }
+
+        .sidebar .menu-text,
+        .sidebar-header h2 {
+          display: none;
+        }
+
+        .main-content {
+          margin-left: 70px;
+        }
+
+        .vehicle-header {
+          flex-direction: column;
+          gap: 15px;
+          text-align: center;
+        }
+
+        .vehicle-info {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .info-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 40 40"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="40" height="40" rx="8" fill="white" />
+            <path
+              d="M10 20C10 14.4772 14.4772 10 20 10C25.5228 10 30 14.4772 30 20C30 25.5228 25.5228 30 20 30C14.4772 30 10 25.5228 10 20Z"
+              fill="#0056a6"
+            />
+            <rect x="15" y="15" width="10" height="10" rx="2" fill="white" />
+          </svg>
+        </div>
+        <h2>LTO VIS</h2>
+      </div>
+      <div class="sidebar-menu">
+        <ul>
+          <li>
+            <a href="officer-dashboard.html"
+              ><i class="fas fa-tachometer-alt"></i>
+              <span class="menu-text">Dashboard</span></a
+            >
+          </li>
+          <li>
+            <a href="officer-add-vehicle.html"
+              ><i class="fas fa-car-side"></i>
+              <span class="menu-text">Add Vehicle</span></a
+            >
+          </li>
+          <li>
+            <a href="officer-my-vehicles.html"
+              ><i class="fas fa-list"></i>
+              <span class="menu-text">My Vehicles</span></a
+            >
+          </li>
+          <li>
+            <a href="#"
+              ><i class="fas fa-qrcode"></i>
+              <span class="menu-text">QR Stickers</span></a
+            >
+          </li>
+          <li>
+            <a href="#"
+              ><i class="fas fa-sign-out-alt"></i>
+              <span class="menu-text">Logout</span></a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="top-bar">
+        <div class="page-title">
+          <h1>Vehicle Profile</h1>
+          <p>View and update vehicle information</p>
+        </div>
+        <div class="user-menu">
+          <div class="user-info">
+            <div class="user-name">Officer Juan</div>
+            <div class="user-role">Impounding Officer</div>
+          </div>
+          <div class="user-avatar">OJ</div>
+        </div>
+      </div>
+
+      <div class="vehicle-header">
+        <div class="vehicle-info">
+          <div class="vehicle-icon">
+            <i class="fas fa-car"></i>
+          </div>
+          <div class="vehicle-details">
+            <h2 id="vehicleTitle">Loading...</h2>
+            <p id="referenceInfo">
+              Reference No: Loading... | Impounded: Loading...
+            </p>
+          </div>
+        </div>
+        <div class="status-badge status-pending">Pending Approval</div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="vehicle-info">
+          Vehicle Information
+        </div>
+        <div class="tab" data-tab="violation-info">Violation Information</div>
+        <div class="tab" data-tab="condition-report">Condition Report</div>
+        <div class="tab" data-tab="photos">Vehicle Photos</div>
+      </div>
+
+      <div class="tab-content active" id="vehicle-info">
+        <div class="info-grid">
+          <div class="info-card">
+            <h3><i class="fas fa-car"></i> Basic Information</h3>
+            <div class="info-item">
+              <span class="info-label">Plate Number:</span>
+              <span class="info-value" id="plateNumber">Loading...</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Vehicle Type:</span>
+              <span class="info-value" id="vehicleType">Loading...</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Model:</span>
+              <span class="info-value" id="vehicleModel">Loading...</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Color:</span>
+              <span class="info-value" id="vehicleColor">Loading...</span>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <h3><i class="fas fa-map-marker-alt"></i> Impound Details</h3>
+            <div class="info-item">
+              <span class="info-label">Impound Date:</span>
+              <span class="info-value" id="impoundDate">Loading...</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Impound Time:</span>
+              <span class="info-value" id="impoundTime">Loading...</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Towing Location:</span>
+              <span class="info-value" id="towingLocation">Loading...</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Slot Number:</span>
+              <span class="info-value" id="slotNumber">Loading...</span>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <h3><i class="fas fa-user"></i> Officer Information</h3>
+            <div class="info-item">
+              <span class="info-label">Impounding Officer:</span>
+              <span class="info-value" id="impoundingOfficer">Loading...</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Badge Number:</span>
+              <span class="info-value" id="officerBadge">Loading...</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Department:</span>
+              <span class="info-value" id="department">Loading...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="violation-info">
+        <div class="info-grid">
+          <div class="info-card">
+            <h3>
+              <i class="fas fa-exclamation-triangle"></i> Violation Details
+            </h3>
+            <div class="info-item">
+              <span class="info-label">Violation Type:</span>
+              <span class="info-value" id="violationCode">Loading...</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Violation Code:</span>
+              <span class="info-value">LTO-001</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Fine Amount:</span>
+              <span class="info-value" id="fineAmount">Loading...</span>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <h3>
+              <i class="fas fa-clipboard-list"></i> Additional Information
+            </h3>
+            <div class="info-item">
+              <span class="info-label">Location of Violation:</span>
+              <span class="info-value" id="violationLocation">Loading...</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Time of Violation:</span>
+              <span class="info-value" id="violationTime">Loading...</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Witnesses:</span>
+              <span class="info-value">None</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3><i class="fas fa-sticky-note"></i> Violation Description</h3>
+          <p id="violationDescription">Loading...</p>
+        </div>
+      </div>
+
+      <div class="tab-content" id="condition-report">
+        <div class="info-card">
+          <h3>
+            <i class="fas fa-clipboard-check"></i> Current Condition Notes
+          </h3>
+          <p id="conditionNotes">Loading...</p>
+        </div>
+
+        <div class="form-group">
+          <label for="conditionUpdate">Update Condition Report</label>
+          <textarea
+            id="conditionUpdate"
+            rows="4"
+            placeholder="Enter updated condition notes..."
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-outline">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+          <button class="btn btn-primary">
+            <i class="fas fa-save"></i> Update Condition
+          </button>
+        </div>
+      </div>
+
+      <div class="tab-content" id="photos">
+        <h3 style="margin-bottom: 20px; color: var(--lto-dark-blue)">
+          Vehicle Photos
+        </h3>
+        <div class="photo-gallery" id="photosContainer">
+          <!-- Photos will be loaded here -->
+        </div>
+
+        <div style="margin-top: 20px">
+          <button class="btn btn-outline">
+            <i class="fas fa-plus"></i> Add More Photos
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+      } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyByzd88bcUAq0VdP0w6oB8W_b2AUgoIzXc",
+        authDomain: "vehicle-impound.firebaseapp.com",
+        projectId: "vehicle-impound",
+        storageBucket: "vehicle-impound.appspot.com",
+        messagingSenderId: "69239563292",
+        appId: "1:69239563292:web:281912e8a38301c0feabd9",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      // Helper function to parse Firestore date
+      function parseDate(dateInput) {
+        if (!dateInput) return null;
+        if (typeof dateInput.toDate === "function") return dateInput.toDate();
+        if (dateInput instanceof Date) return dateInput;
+        const parsed = new Date(dateInput);
+        return isNaN(parsed.getTime()) ? null : parsed;
+      }
+
+      // Helper function to format date for display
+      function formatDate(dateInput) {
+        const date = parseDate(dateInput);
+        return date ? date.toLocaleDateString() : "N/A";
+      }
+
+      // Helper function to format time for display
+      function formatTime(dateInput) {
+        const date = parseDate(dateInput);
+        return date
+          ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : "N/A";
+      }
+
+      async function loadVehicleData() {
+        try {
+          // Get vehicle ID from URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const vehicleId = urlParams.get("id");
+
+          if (!vehicleId) {
+            console.error("No vehicle ID found in URL");
+            document.getElementById("vehicleTitle").textContent =
+              "Vehicle Not Found";
+            return;
+          }
+
+          // Fetch vehicle data from Firestore
+          const docRef = doc(db, "impoundedVehicles", vehicleId);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            const vehicle = docSnap.data();
+
+            // Update vehicle header with reference number
+            const referenceNumber = vehicle.referenceNumber || "N/A";
+            const impoundDate = formatDate(vehicle.impoundDate);
+
+            document.getElementById("vehicleTitle").textContent = `${
+              vehicle.plateNumber || "N/A"
+            } - ${vehicle.vehicleModel || "N/A"}`;
+            document.getElementById(
+              "referenceInfo"
+            ).textContent = `Reference No: ${referenceNumber} | Impounded: ${impoundDate}`;
+
+            // Update basic information
+            document.getElementById("plateNumber").textContent =
+              vehicle.plateNumber || "N/A";
+            document.getElementById("vehicleType").textContent =
+              vehicle.vehicleType || "N/A";
+            document.getElementById("vehicleModel").textContent =
+              vehicle.vehicleModel || "N/A";
+            document.getElementById("vehicleColor").textContent =
+              vehicle.vehicleColor || "N/A";
+
+            // Update impound details
+            document.getElementById("impoundDate").textContent = formatDate(
+              vehicle.impoundDate
+            );
+            document.getElementById("impoundTime").textContent =
+              formatTime(vehicle.impoundDate) || vehicle.impoundTime || "N/A";
+            document.getElementById("towingLocation").textContent =
+              vehicle.towingLocation || "N/A";
+            document.getElementById("slotNumber").textContent =
+              vehicle.slotNumber || "N/A";
+
+            // Update officer information
+            document.getElementById("impoundingOfficer").textContent =
+              vehicle.impoundingOfficerName || "N/A";
+            document.getElementById("officerBadge").textContent =
+              vehicle.impoundingOfficerId || "N/A";
+            document.getElementById("department").textContent =
+              vehicle.department || "N/A";
+
+            // Update violation information
+            document.getElementById("violationCode").textContent =
+              vehicle.violationCode || "N/A";
+            document.getElementById("fineAmount").textContent =
+              vehicle.fineAmount
+                ? `₱${vehicle.fineAmount.toLocaleString()}`
+                : "N/A";
+            document.getElementById("violationDescription").textContent =
+              vehicle.violationDescription || "N/A";
+            document.getElementById("violationLocation").textContent =
+              vehicle.towingLocation || "N/A";
+            document.getElementById("violationTime").textContent =
+              formatTime(vehicle.impoundDate) || "N/A";
+
+            // Update condition report
+            document.getElementById("conditionNotes").textContent =
+              vehicle.conditionNotes || "No condition notes available";
+
+            // Update photos if available
+            const photosContainer = document.getElementById("photosContainer");
+            if (vehicle.photoUrls && vehicle.photoUrls.length > 0) {
+              photosContainer.innerHTML = vehicle.photoUrls
+                .map(
+                  (url) => `
+                            <div class="photo-item">
+                                <img src="${url}" alt="Vehicle Photo">
+                            </div>
+                        `
+                )
+                .join("");
+            } else {
+              photosContainer.innerHTML = `
+                            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--lto-dark-gray);">
+                                <i class="fas fa-camera" style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;"></i>
+                                <p>No photos available for this vehicle</p>
+                            </div>
+                        `;
+            }
+          } else {
+            console.error("No such document!");
+            document.getElementById("vehicleTitle").textContent =
+              "Vehicle Not Found";
+            document.getElementById("referenceInfo").textContent =
+              "Reference No: Not Found | Impounded: N/A";
+          }
+        } catch (error) {
+          console.error("Error loading vehicle data:", error);
+          document.getElementById("vehicleTitle").textContent =
+            "Error Loading Vehicle";
+          document.getElementById("referenceInfo").textContent =
+            "Error loading vehicle information";
+        }
+      }
+
+      // Load vehicle data when page loads
+      document.addEventListener("DOMContentLoaded", loadVehicleData);
+    </script>
+
+    <script>
+      document.querySelectorAll(".tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const tabContainer = tab.closest(".tabs");
+
+          // Remove active class from all tabs and contents in this container
+          tabContainer
+            .querySelectorAll(".tab")
+            .forEach((t) => t.classList.remove("active"));
+          tabContainer.parentElement
+            .querySelectorAll(".tab-content")
+            .forEach((c) => c.classList.remove("active"));
+
+          // Add active class to clicked tab and corresponding content
+          tab.classList.add("active");
+          const tabId = tab.getAttribute("data-tab");
+          tabContainer.parentElement
+            .querySelector(`#${tabId}`)
+            .classList.add("active");
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Violations & Fees - VIMS</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="sidebar.css" />
+
+    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore-compat.js"></script>
+
+    <style>
+      :root {
+        /* Exact Palette */
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --sidebar-bg: #1e293b;
+        --bg-body: #f1f5f9;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --danger: #ef4444;
+        --success: #10b981;
+        --warning: #f59e0b;
+
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+
+        --radius: 12px;
+        --anim-speed: 0.25s;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Inter", "Segoe UI", Roboto, sans-serif;
+      }
+
+      body {
+        background-color: var(--bg-body);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+        color: var(--text-main);
+      }
+
+      /* --- Main Content --- */
+      .main-content {
+        flex: 1;
+        margin-left: 260px; /* Matches sidebar width */
+        padding: 30px 40px;
+        transition: var(--anim-speed);
+        padding-bottom: 80px;
+        width: calc(100% - 260px);
+      }
+
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 35px;
+      }
+
+      .page-title h1 {
+        font-size: 26px;
+        color: var(--text-main);
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
+
+      .page-title p {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin-top: 4px;
+      }
+
+      /* User Menu (Pill) */
+      .user-menu {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        padding: 6px 8px 6px 16px;
+        border-radius: 50px;
+        background: white;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+        position: relative;
+      }
+
+      .user-menu:hover {
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+      }
+
+      .user-info {
+        text-align: right;
+        margin-right: 12px;
+      }
+
+      .user-name {
+        font-weight: 700;
+        color: var(--text-main);
+        font-size: 14px;
+      }
+
+      .user-role {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .user-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+      }
+
+      /* Logout Dropdown */
+      .logout-dropdown {
+        position: absolute;
+        top: 60px;
+        right: 0;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 10px;
+        min-width: 200px;
+        display: none;
+        z-index: 1000;
+        border: 1px solid var(--border);
+      }
+
+      .logout-item {
+        padding: 12px 15px;
+        display: flex;
+        align-items: center;
+        color: var(--text-main);
+        text-decoration: none;
+        transition: 0.2s;
+        cursor: pointer;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        font-size: 14px;
+        border-radius: 8px;
+      }
+
+      .logout-item:hover {
+        background-color: var(--bg-body);
+        color: var(--primary);
+      }
+
+      .logout-item i {
+        margin-right: 10px;
+        width: 16px;
+      }
+
+      /* --- Tabs --- */
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 25px;
+        gap: 20px;
+      }
+
+      .tab {
+        padding: 10px 0;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--text-muted);
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s;
+      }
+
+      .tab.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* --- Actions --- */
+      .table-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 20px;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+        font-size: 14px;
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+      .btn-primary:hover {
+        background: var(--primary-dark);
+      }
+
+      .btn-outline {
+        background: white;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        box-shadow: var(--shadow-sm);
+      }
+      .btn-outline:hover {
+        background: var(--bg-body);
+        color: var(--text-main);
+        border-color: var(--primary);
+      }
+
+      /* --- Data Table --- */
+      .data-table {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+
+      .table-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid var(--border);
+        background: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .table-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        white-space: nowrap;
+      }
+
+      th {
+        background: #f8fafc;
+        padding: 16px 20px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      td {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+        color: var(--text-main);
+        vertical-align: middle;
+      }
+
+      /* Center certain columns matching previous CSS logic */
+      .data-table table th:nth-child(3),
+      .data-table table th:nth-child(4),
+      .data-table table th:nth-child(5),
+      .data-table table th:nth-child(6),
+      .data-table table td:nth-child(3),
+      .data-table table td:nth-child(4),
+      .data-table table td:nth-child(5),
+      .data-table table td:nth-child(6) {
+        text-align: center;
+      }
+
+      /* Status Badges */
+      .status {
+        padding: 6px 12px;
+        border-radius: 30px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        display: inline-block;
+      }
+
+      .status-active {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #86efac;
+      }
+
+      .status-inactive {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+      }
+
+      .action-cell {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+      }
+
+      .action-icon-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s;
+        font-size: 14px;
+        border: 1px solid transparent;
+      }
+
+      .action-edit {
+        background: #fff7ed;
+        color: #d97706;
+        border-color: #fed7aa;
+      }
+      .action-edit:hover {
+        background: #d97706;
+        color: white;
+      }
+
+      /* --- Modals (Strictly Centered) --- */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        backdrop-filter: blur(4px);
+      }
+
+      /* CSS Override to force flex centering */
+      .modal[style*="display: block"],
+      .modal[style*="display:block"] {
+        display: flex !important;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .modal-content {
+        background: white;
+        width: 95%;
+        max-width: 600px;
+        border-radius: 16px;
+        padding: 0;
+        box-shadow: var(--shadow-sm);
+        max-height: 90vh;
+        overflow-y: auto;
+        margin: 0;
+      }
+
+      .modal-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: white;
+        position: sticky;
+        top: 0;
+      }
+
+      .modal-header h3 {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0;
+        color: var(--text-main);
+      }
+
+      .close-modal {
+        background: #f1f5f9;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        font-size: 20px;
+        color: var(--text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+      }
+
+      .close-modal:hover {
+        background: #e2e8f0;
+      }
+
+      .modal-body {
+        padding: 25px;
+      }
+
+      .form-row {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 15px;
+      }
+      .form-col {
+        flex: 1;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-main);
+      }
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 14px;
+        background: #f8fafc;
+        outline: none;
+      }
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        border-color: var(--primary);
+        background: white;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .modal-actions {
+        padding: 20px 25px;
+        border-top: 1px solid var(--border);
+        background: #f8fafc;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .loading-spinner {
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 900px) {
+        .main-content {
+          margin-left: 0;
+          padding: 20px;
+          width: 100%;
+        }
+        .form-row {
+          flex-direction: column;
+          gap: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="sidebar-container"></div>
+
+    <div class="main-content">
+      <div class="top-bar">
+        <div class="page-title">
+          <h1>Violations & Fees</h1>
+          <p>Manage traffic violations and fee structures.</p>
+        </div>
+        <div class="user-menu" onclick="toggleLogoutDropdown()">
+          <div class="user-info">
+            <div class="user-name" id="userDisplayName">Loading...</div>
+            <div class="user-role" id="userRole">Administrator</div>
+          </div>
+          <div class="user-avatar" id="userAvatar">
+            <i class="fas fa-user" id="avatarIcon"></i>
+          </div>
+
+          <div class="logout-dropdown" id="logoutDropdown">
+            <button class="logout-item" onclick="viewProfile()">
+              <i class="fas fa-user"></i> My Profile
+            </button>
+            <button class="logout-item" onclick="changePassword()">
+              <i class="fas fa-key"></i> Change Password
+            </button>
+            <button
+              class="logout-item"
+              onclick="logout()"
+              style="color: var(--danger)"
+            >
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="violation-list">Violation List</div>
+        <div class="tab" data-tab="fee-settings">Fee Settings</div>
+      </div>
+
+      <div class="tab-content active" id="violation-list">
+        <div class="table-actions">
+          <button class="btn btn-primary" id="addViolationBtn">
+            <i class="fas fa-plus"></i> Add Violation
+          </button>
+        </div>
+
+        <div class="data-table">
+          <div class="table-header">
+            <div class="table-title">Traffic Violations</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Violation Description</th>
+                <th>Fine Amount</th>
+                <th>Penalty Points</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="violationsTableBody">
+              <tr>
+                <td
+                  colspan="6"
+                  style="
+                    text-align: center;
+                    padding: 40px;
+                    color: var(--text-muted);
+                  "
+                >
+                  <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading violations...
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-content" id="fee-settings">
+        <div class="data-table">
+          <div class="table-header">
+            <div class="table-title">Fee Structure</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Fee Type</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Applicable To</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="feesTableBody">
+              <tr>
+                <td
+                  colspan="5"
+                  style="
+                    text-align: center;
+                    padding: 40px;
+                    color: var(--text-muted);
+                  "
+                >
+                  <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading fees...
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="violationModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="violationModalTitle">Add New Violation</h3>
+          <span class="close-modal" onclick="closeViolationModal()"
+            >&times;</span
+          >
+        </div>
+        <div class="modal-body">
+          <form id="violationForm">
+            <input type="hidden" id="violationId" />
+            <div class="form-row">
+              <div class="form-col">
+                <div class="form-group">
+                  <label for="violationCode">Violation Code *</label>
+                  <input
+                    type="text"
+                    id="violationCode"
+                    placeholder="e.g., LTO-001"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="form-col">
+                <div class="form-group">
+                  <label for="violationStatus">Status *</label>
+                  <select id="violationStatus" required>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="violationDescription">Violation Description *</label>
+              <textarea
+                id="violationDescription"
+                rows="3"
+                placeholder="Enter violation description"
+                required
+              ></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <div class="form-group">
+                  <label for="fineAmount">Fine Amount (₱) *</label>
+                  <input
+                    type="number"
+                    id="fineAmount"
+                    placeholder="e.g., 1000"
+                    min="0"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="form-col">
+                <div class="form-group">
+                  <label for="penaltyPoints">Penalty Points *</label>
+                  <input
+                    type="number"
+                    id="penaltyPoints"
+                    placeholder="e.g., 5"
+                    min="0"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-outline"
+            onclick="closeViolationModal()"
+          >
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary" id="saveViolationBtn">
+            <i class="fas fa-save"></i> Save Violation
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="feeModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="feeModalTitle">Edit Fee</h3>
+          <span class="close-modal" onclick="closeFeeModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="feeForm">
+            <input type="hidden" id="feeId" />
+            <div class="form-group">
+              <label for="feeType">Fee Type *</label>
+              <input
+                type="text"
+                id="feeType"
+                placeholder="e.g., Storage Fee"
+                required
+                readonly
+              />
+            </div>
+            <div class="form-group">
+              <label for="feeDescription">Description *</label>
+              <textarea
+                id="feeDescription"
+                rows="3"
+                placeholder="Enter fee description"
+                required
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="feeAmount">Amount *</label>
+              <input
+                type="text"
+                id="feeAmount"
+                placeholder="e.g., ₱200/day"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="feeApplicableTo">Applicable To *</label>
+              <input
+                type="text"
+                id="feeApplicableTo"
+                placeholder="e.g., All impounded vehicles"
+                required
+              />
+            </div>
+          </form>
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-outline"
+            onclick="closeFeeModal()"
+          >
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary" id="saveFeeBtn">
+            <i class="fas fa-save"></i> Save Fee
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      console.log("Violations & Fees Script Loaded");
+
+      // Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyByzd88bcUAq0VdP0w6oB8W_b2AUgoIzXc",
+        authDomain: "vehicle-impound.firebaseapp.com",
+        projectId: "vehicle-impound",
+        storageBucket: "vehicle-impound.firebasestorage.app",
+        messagingSenderId: "69239563292",
+        appId: "1:69239563292:web:281912e8a38301c0feabd9",
+      };
+
+      // Initialize Firebase
+      const app = firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+
+      // Global variables
+      let currentUser = null;
+      let editingViolationId = null;
+      let editingFeeId = null;
+
+      // Initialize the application
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM Content Loaded");
+
+        // 1. FETCH THE SIDEBAR
+        fetch("sidebar.html")
+          .then((response) => {
+            if (!response.ok) throw new Error("Sidebar not found");
+            return response.text();
+          })
+          .then((data) => {
+            // Inject the HTML
+            document.getElementById("sidebar-container").innerHTML = data;
+
+            // Highlight the "Violations & Fees" link
+            highlightActiveLink();
+          })
+          .catch((error) => console.error("Error loading sidebar:", error));
+
+        // 2. INITIALIZE APP
+        initializeApp();
+      });
+
+      // --- SIDEBAR HELPER FUNCTION ---
+      function highlightActiveLink() {
+        // Current Page: violations-fees.html
+        const page = "violations-fees.html";
+
+        const links = document.querySelectorAll(".sidebar-menu a");
+
+        links.forEach((link) => {
+          const href = link.getAttribute("href");
+          if (href === page) {
+            link.classList.add("active");
+          } else {
+            link.classList.remove("active");
+          }
+        });
+      }
+
+      async function initializeApp() {
+        try {
+          // Check if user is authenticated
+          auth.onAuthStateChanged(async (user) => {
+            if (user) {
+              currentUser = user;
+              console.log("User authenticated:", user.email);
+
+              await loadUserData(user.uid); // Load user data for top-bar
+              setupEventListeners();
+              await loadAllData();
+            } else {
+              console.log("No user authenticated, redirecting to login...");
+              window.location.href = "../index.html";
+            }
+          });
+        } catch (error) {
+          console.error("Error initializing app:", error);
+          showError("Error initializing application: " + error.message);
+        }
+      }
+
+      // Load user data for top-bar display
+      async function loadUserData(userId) {
+        try {
+          const userDoc = await db.collection("users").doc(userId).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+
+            // Update top-bar elements
+            document.getElementById("userDisplayName").textContent =
+              userData.fullName || "Admin User";
+            document.getElementById("userRole").textContent =
+              formatRole(userData.role) || "System Administrator";
+
+            // Update avatar with initials
+            if (userData.fullName) {
+              const initials = getInitials(userData.fullName);
+              document.getElementById("avatarIcon").parentElement.innerHTML =
+                initials;
+            }
+          }
+        } catch (error) {
+          console.error("Error loading user data:", error);
+        }
+      }
+
+      // Helper function to get initials from full name
+      function getInitials(fullName) {
+        return fullName
+          .split(" ")
+          .map((name) => name[0])
+          .join("")
+          .toUpperCase()
+          .substring(0, 2);
+      }
+
+      // Helper function to format role for display
+      function formatRole(role) {
+        const roleMap = {
+          admin: "Administrator",
+          officer: "Impounding Officer",
+          cashier: "Cashier",
+          releasing: "Releasing Officer",
+        };
+        return roleMap[role] || role;
+      }
+
+      // Top-bar dropdown functionality
+      function toggleLogoutDropdown() {
+        const dropdown = document.getElementById("logoutDropdown");
+        dropdown.style.display =
+          dropdown.style.display === "block" ? "none" : "block";
+      }
+
+      // Close dropdown when clicking outside
+      document.addEventListener("click", function (event) {
+        const dropdown = document.getElementById("logoutDropdown");
+        const userAvatar = document.getElementById("userAvatar");
+
+        if (
+          userAvatar &&
+          !userAvatar.contains(event.target) &&
+          dropdown &&
+          !dropdown.contains(event.target)
+        ) {
+          dropdown.style.display = "none";
+        }
+      });
+
+      // Dropdown menu functions
+      function viewProfile() {
+        alert("Profile view functionality would go here");
+        document.getElementById("logoutDropdown").style.display = "none";
+      }
+
+      function changePassword() {
+        alert("Change password functionality would go here");
+        document.getElementById("logoutDropdown").style.display = "none";
+      }
+
+      async function logout() {
+        if (confirm("Are you sure you want to logout?")) {
+          try {
+            await auth.signOut();
+            window.location.href = "../index.html";
+          } catch (error) {
+            console.error("Error during logout:", error);
+          }
+        }
+      }
+
+      function setupEventListeners() {
+        console.log("Setting up event listeners");
+
+        // Tab switching
+        const tabs = document.querySelectorAll(".tab");
+        tabs.forEach((tab) => {
+          tab.addEventListener("click", function () {
+            const tabId = this.getAttribute("data-tab");
+            switchTab(tabId);
+          });
+        });
+
+        // Add violation button
+        document
+          .getElementById("addViolationBtn")
+          .addEventListener("click", showAddViolationModal);
+
+        // Save violation button
+        document
+          .getElementById("saveViolationBtn")
+          .addEventListener("click", saveViolation);
+
+        // Save fee button
+        document
+          .getElementById("saveFeeBtn")
+          .addEventListener("click", saveFee);
+
+        // Close modals when clicking outside
+        window.addEventListener("click", function (event) {
+          const violationModal = document.getElementById("violationModal");
+          const feeModal = document.getElementById("feeModal");
+
+          if (event.target === violationModal) {
+            closeViolationModal();
+          }
+          if (event.target === feeModal) {
+            closeFeeModal();
+          }
+        });
+      }
+
+      function switchTab(tabId) {
+        // Update tabs
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+        document
+          .querySelector(`.tab[data-tab="${tabId}"]`)
+          .classList.add("active");
+
+        // Update content
+        document.querySelectorAll(".tab-content").forEach((content) => {
+          content.classList.remove("active");
+        });
+        document.getElementById(tabId).classList.add("active");
+      }
+
+      // READ OPERATIONS: Load data from Firebase
+      async function loadAllData() {
+        await loadViolations();
+        await loadFees();
+      }
+
+      async function loadViolations() {
+        try {
+          console.log("Loading violations from Firestore...");
+          const tbody = document.getElementById("violationsTableBody");
+
+          // Show loading
+          tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 20px;">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i> Loading violations...
+                    </div>
+                </td>
+            </tr>
+        `;
+
+          const querySnapshot = await db
+            .collection("violations")
+            .orderBy("code")
+            .get();
+
+          console.log("Violations found:", querySnapshot.size);
+
+          if (querySnapshot.empty) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 20px; color: #666;">
+                        No violations found. Click "Add Violation" to create the first one.
+                    </td>
+                </tr>
+            `;
+            return;
+          }
+
+          // Clear table
+          tbody.innerHTML = "";
+
+          querySnapshot.forEach((doc) => {
+            const violationData = doc.data();
+            const violationRow = createViolationRow(violationData, doc.id);
+            tbody.appendChild(violationRow);
+          });
+
+          console.log("Violations loaded successfully");
+        } catch (error) {
+          console.error("Error loading violations:", error);
+          const tbody = document.getElementById("violationsTableBody");
+          tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 20px; color: #dc3545;">
+                    <i class="fas fa-exclamation-triangle"></i> Error loading violations: ${error.message}
+                </td>
+            </tr>
+        `;
+        }
+      }
+
+      async function loadFees() {
+        try {
+          console.log("Loading fees from Firestore...");
+          const tbody = document.getElementById("feesTableBody");
+
+          // Show loading
+          tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 20px;">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i> Loading fees...
+                    </div>
+                </td>
+            </tr>
+        `;
+
+          const querySnapshot = await db
+            .collection("fees")
+            .orderBy("type")
+            .get();
+
+          console.log("Fees found:", querySnapshot.size);
+
+          if (querySnapshot.empty) {
+            // Create default fees if none exist
+            await createDefaultFees();
+            await loadFees(); // Reload after creating defaults
+            return;
+          }
+
+          // Clear table
+          tbody.innerHTML = "";
+
+          querySnapshot.forEach((doc) => {
+            const feeData = doc.data();
+            const feeRow = createFeeRow(feeData, doc.id);
+            tbody.appendChild(feeRow);
+          });
+
+          console.log("Fees loaded successfully");
+        } catch (error) {
+          console.error("Error loading fees:", error);
+          const tbody = document.getElementById("feesTableBody");
+          tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 20px; color: #dc3545;">
+                    <i class="fas fa-exclamation-triangle"></i> Error loading fees: ${error.message}
+                </td>
+            </tr>
+        `;
+        }
+      }
+
+      // CREATE DEFAULT FEES
+      async function createDefaultFees() {
+        try {
+          const defaultFees = [
+            {
+              type: "Storage Fee",
+              description: "Daily storage charge for impounded vehicles",
+              amount: "₱200/day",
+              applicableTo: "All impounded vehicles",
+              createdAt: new Date().toISOString(),
+              createdBy: currentUser.uid,
+            },
+            {
+              type: "Towing Fee",
+              description: "Fee for towing service",
+              amount: "₱1,500",
+              applicableTo: "Towed vehicles only",
+              createdAt: new Date().toISOString(),
+              createdBy: currentUser.uid,
+            },
+            {
+              type: "Administrative Fee",
+              description: "Processing fee for impound release",
+              amount: "₱500",
+              applicableTo: "All released vehicles",
+              createdAt: new Date().toISOString(),
+              createdBy: currentUser.uid,
+            },
+            {
+              type: "Documentation Fee",
+              description: "Fee for processing documents",
+              amount: "₱300",
+              applicableTo: "All impounded vehicles",
+              createdAt: new Date().toISOString(),
+              createdBy: currentUser.uid,
+            },
+          ];
+
+          const batch = db.batch();
+
+          defaultFees.forEach((fee) => {
+            const docRef = db.collection("fees").doc();
+            batch.set(docRef, fee);
+          });
+
+          await batch.commit();
+          console.log("Default fees created successfully");
+        } catch (error) {
+          console.error("Error creating default fees:", error);
+        }
+      }
+
+      function createViolationRow(violationData, docId) {
+        const row = document.createElement("tr");
+
+        const statusClass =
+          violationData.status === "active"
+            ? "status-active"
+            : "status-inactive";
+        const statusText =
+          violationData.status === "active" ? "Active" : "Inactive";
+
+        row.innerHTML = `
+        <td>${violationData.code || "N/A"}</td>
+        <td>${violationData.description || "N/A"}</td>
+        <td>₱${
+          violationData.fineAmount
+            ? violationData.fineAmount.toLocaleString()
+            : "0"
+        }</td>
+        <td>${violationData.penaltyPoints || "0"}</td>
+        <td><span class="status ${statusClass}">${statusText}</span></td>
+        <td class="action-cell">
+            <div class="action-icon-btn action-edit" onclick="editViolation('${docId}')">
+                <i class="fas fa-edit"></i>
+            </div>
+        </td>
+    `;
+
+        return row;
+      }
+
+      function createFeeRow(feeData, docId) {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+        <td>${feeData.type || "N/A"}</td>
+        <td>${feeData.description || "N/A"}</td>
+        <td>${feeData.amount || "N/A"}</td>
+        <td>${feeData.applicableTo || "N/A"}</td>
+        <td class="action-cell">
+            <div class="action-icon-btn action-edit" onclick="editFee('${docId}')">
+                <i class="fas fa-edit"></i>
+            </div>
+        </td>
+    `;
+
+        return row;
+      }
+
+      // VIOLATION CRUD OPERATIONS
+
+      function showAddViolationModal() {
+        editingViolationId = null;
+        document.getElementById("violationModalTitle").textContent =
+          "Add New Violation";
+        document.getElementById("violationForm").reset();
+        document.getElementById("violationModal").style.display = "block";
+      }
+
+      function closeViolationModal() {
+        document.getElementById("violationModal").style.display = "none";
+        editingViolationId = null;
+      }
+
+      async function editViolation(docId) {
+        try {
+          console.log("Editing violation:", docId);
+          editingViolationId = docId;
+
+          // Show loading state
+          const saveBtn = document.getElementById("saveViolationBtn");
+          saveBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Loading...';
+          saveBtn.disabled = true;
+
+          // Get violation data
+          const doc = await db.collection("violations").doc(docId).get();
+
+          if (!doc.exists) {
+            showError("Violation not found!");
+            return;
+          }
+
+          const violationData = doc.data();
+
+          // Populate form
+          document.getElementById("violationModalTitle").textContent =
+            "Edit Violation";
+          document.getElementById("violationId").value = docId;
+          document.getElementById("violationCode").value =
+            violationData.code || "";
+          document.getElementById("violationDescription").value =
+            violationData.description || "";
+          document.getElementById("fineAmount").value =
+            violationData.fineAmount || "";
+          document.getElementById("penaltyPoints").value =
+            violationData.penaltyPoints || "";
+          document.getElementById("violationStatus").value =
+            violationData.status || "active";
+
+          // Show modal
+          document.getElementById("violationModal").style.display = "block";
+        } catch (error) {
+          console.error("Error loading violation data:", error);
+          showError("Error loading violation data: " + error.message);
+        } finally {
+          // Reset button state
+          const saveBtn = document.getElementById("saveViolationBtn");
+          saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Violation';
+          saveBtn.disabled = false;
+        }
+      }
+
+      async function saveViolation() {
+        const code = document.getElementById("violationCode").value.trim();
+        const description = document
+          .getElementById("violationDescription")
+          .value.trim();
+        const fineAmount = parseInt(
+          document.getElementById("fineAmount").value
+        );
+        const penaltyPoints = parseInt(
+          document.getElementById("penaltyPoints").value
+        );
+        const status = document.getElementById("violationStatus").value;
+
+        // Validation
+        if (!code || !description || !fineAmount || !penaltyPoints || !status) {
+          showError("Please fill in all required fields");
+          return;
+        }
+
+        if (fineAmount < 0 || penaltyPoints < 0) {
+          showError("Fine amount and penalty points must be positive numbers");
+          return;
+        }
+
+        try {
+          console.log("Saving violation...");
+
+          // Show loading state
+          const saveBtn = document.getElementById("saveViolationBtn");
+          saveBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Saving...';
+          saveBtn.disabled = true;
+
+          const violationData = {
+            code: code,
+            description: description,
+            fineAmount: fineAmount,
+            penaltyPoints: penaltyPoints,
+            status: status,
+            updatedAt: new Date().toISOString(),
+            updatedBy: currentUser.uid,
+          };
+
+          if (editingViolationId) {
+            // UPDATE OPERATION
+            await db
+              .collection("violations")
+              .doc(editingViolationId)
+              .update(violationData);
+            showSuccess("Violation updated successfully!");
+          } else {
+            // CREATE OPERATION
+            violationData.createdAt = new Date().toISOString();
+            violationData.createdBy = currentUser.uid;
+            await db.collection("violations").add(violationData);
+            showSuccess("Violation created successfully!");
+          }
+
+          // Close modal and reload data
+          closeViolationModal();
+          await loadViolations();
+        } catch (error) {
+          console.error("Error saving violation:", error);
+          showError("Error saving violation: " + error.message);
+        } finally {
+          // Reset button state
+          const saveBtn = document.getElementById("saveViolationBtn");
+          saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Violation';
+          saveBtn.disabled = false;
+        }
+      }
+
+      // FEE CRUD OPERATIONS
+
+      async function editFee(docId) {
+        try {
+          console.log("Editing fee:", docId);
+          editingFeeId = docId;
+
+          // Show loading state
+          const saveBtn = document.getElementById("saveFeeBtn");
+          saveBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Loading...';
+          saveBtn.disabled = true;
+
+          // Get fee data
+          const doc = await db.collection("fees").doc(docId).get();
+
+          if (!doc.exists) {
+            showError("Fee not found!");
+            return;
+          }
+
+          const feeData = doc.data();
+
+          // Populate form
+          document.getElementById("feeModalTitle").textContent = "Edit Fee";
+          document.getElementById("feeId").value = docId;
+          document.getElementById("feeType").value = feeData.type || "";
+          document.getElementById("feeDescription").value =
+            feeData.description || "";
+          document.getElementById("feeAmount").value = feeData.amount || "";
+          document.getElementById("feeApplicableTo").value =
+            feeData.applicableTo || "";
+
+          // Show modal
+          document.getElementById("feeModal").style.display = "block";
+        } catch (error) {
+          console.error("Error loading fee data:", error);
+          showError("Error loading fee data: " + error.message);
+        } finally {
+          // Reset button state
+          const saveBtn = document.getElementById("saveFeeBtn");
+          saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Fee';
+          saveBtn.disabled = false;
+        }
+      }
+
+      function closeFeeModal() {
+        document.getElementById("feeModal").style.display = "none";
+        editingFeeId = null;
+      }
+
+      async function saveFee() {
+        const type = document.getElementById("feeType").value.trim();
+        const description = document
+          .getElementById("feeDescription")
+          .value.trim();
+        const amount = document.getElementById("feeAmount").value.trim();
+        const applicableTo = document
+          .getElementById("feeApplicableTo")
+          .value.trim();
+
+        // Validation
+        if (!type || !description || !amount || !applicableTo) {
+          showError("Please fill in all required fields");
+          return;
+        }
+
+        try {
+          console.log("Saving fee...");
+
+          // Show loading state
+          const saveBtn = document.getElementById("saveFeeBtn");
+          saveBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Saving...';
+          saveBtn.disabled = true;
+
+          const feeData = {
+            type: type,
+            description: description,
+            amount: amount,
+            applicableTo: applicableTo,
+            updatedAt: new Date().toISOString(),
+            updatedBy: currentUser.uid,
+          };
+
+          // UPDATE OPERATION (fees can only be edited, not created)
+          await db.collection("fees").doc(editingFeeId).update(feeData);
+          showSuccess("Fee updated successfully!");
+
+          // Close modal and reload data
+          closeFeeModal();
+          await loadFees();
+        } catch (error) {
+          console.error("Error saving fee:", error);
+          showError("Error saving fee: " + error.message);
+        } finally {
+          // Reset button state
+          const saveBtn = document.getElementById("saveFeeBtn");
+          saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Fee';
+          saveBtn.disabled = false;
+        }
+      }
+
+      // UTILITY FUNCTIONS
+      function showError(message) {
+        alert("Error: " + message);
+      }
+
+      function showSuccess(message) {
+        alert("Success: " + message);
+      }
+    </script>
+  </body>
+</html>
