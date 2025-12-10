@@ -65,6 +65,7 @@ export default async function handler(req, res) {
           <p><strong>Next Due:</strong> ${receiptData.nextDueDate}</p>
       </div>
     `;
+    // Don't include attachment field for partial payments
   }
 
   // ===================== FULL PAYMENT EMAIL =====================
@@ -83,6 +84,7 @@ export default async function handler(req, res) {
           <p style="color:green;font-weight:bold;text-align:center;">FULLY PAID</p>
       </div>
     `;
+    // Don't include attachment field for full payments
   }
 
   // ===================== RELEASE EMAIL =====================
@@ -95,6 +97,7 @@ export default async function handler(req, res) {
           <p>Your vehicle (${plate}) has been officially released.</p>
       </div>
     `;
+    // Don't include attachment field for release emails
   } else {
     return res.status(400).json({ error: "Invalid email type" });
   }
@@ -112,6 +115,21 @@ export default async function handler(req, res) {
   try {
     console.log("Sending to Brevo API...");
 
+    // Build the email payload
+    const emailPayload = {
+      sender: { name: "VIMS LTO", email: "lawrencekier14@gmail.com" },
+      to: [{ email, name }],
+      subject,
+      htmlContent,
+    };
+
+    // Only add attachment field if we have attachments (for QR emails)
+    if (attachments.length > 0) {
+      emailPayload.attachment = attachments;
+    }
+
+    console.log("Email payload:", JSON.stringify(emailPayload, null, 2));
+
     const apiRes = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -119,13 +137,7 @@ export default async function handler(req, res) {
         "api-key": process.env.BREVO_API_KEY,
         "content-type": "application/json",
       },
-      body: JSON.stringify({
-        sender: { name: "VIMS LTO", email: "lawrencekier14@gmail.com" },
-        to: [{ email, name }],
-        subject,
-        htmlContent,
-        attachment: attachments,
-      }),
+      body: JSON.stringify(emailPayload),
     });
 
     const responseData = await apiRes.json();
