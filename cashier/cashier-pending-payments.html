@@ -1443,49 +1443,94 @@
         document.getElementById("successModal").style.display = "none";
       }
 
+      // ================================
+      // UPDATED EMAIL FUNCTIONS
+      // ================================
       async function sendEmail(data) {
         try {
+          console.log("Sending email with data:", {
+            type: data.type,
+            email: data.email,
+            hasReceiptData: !!data.receiptData,
+          });
+
           const response = await fetch("/api/send-email", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data),
           });
 
+          console.log("Response status:", response.status);
+
+          const text = await response.text();
+          console.log("Response text:", text);
+
           if (!response.ok) {
-            throw new Error("Failed to send email");
+            throw new Error(
+              `Failed to send email: ${response.status} - ${text}`
+            );
           }
 
-          const result = await response.json();
-          console.log("Email sent:", result);
+          const result = JSON.parse(text);
+          console.log("Email sent successfully:", result);
           return result;
         } catch (error) {
           console.error("Error sending email:", error);
+          showEmailStatus("error", `Email failed: ${error.message}`);
           return null;
         }
       }
 
-      // ================================
-      // PARTIAL PAYMENT EMAIL
-      // ================================
+      // Partial payment email
       async function sendPartialPaymentEmail(email, name, receiptData) {
-        return await sendEmail({
+        console.log("sendPartialPaymentEmail called with:", {
+          email,
+          name,
+          receiptData,
+        });
+        const result = await sendEmail({
           type: "partial",
           email,
           name,
           receiptData,
         });
+
+        if (result) {
+          showEmailStatus(
+            "success",
+            "Partial payment receipt sent successfully!"
+          );
+        }
+        return result;
       }
 
-      // ================================
-      // FULL PAYMENT EMAIL
-      // ================================
+      // Full payment email
       async function sendFullPaymentEmail(email, name, receiptData) {
-        return await sendEmail({
+        console.log("sendFullPaymentEmail called with:", {
+          email,
+          name,
+          receiptData,
+        });
+        const result = await sendEmail({
           type: "full",
           email,
           name,
           receiptData,
         });
+
+        if (result) {
+          showEmailStatus("success", "Payment receipt sent successfully!");
+        }
+        return result;
+      }
+
+      // Generic function to send payment email
+      async function sendPaymentEmail(email, name, receiptData, type) {
+        if (type === "partial") {
+          return await sendPartialPaymentEmail(email, name, receiptData);
+        } else {
+          return await sendFullPaymentEmail(email, name, receiptData);
+        }
       }
 
       // UPDATED FUNCTION: Saves receipt to both receipts collection AND payments document
@@ -2098,6 +2143,9 @@
         }-circle"></i> ${msg}`;
       }
 
+      // ================================
+      // UPDATED PAYMENT FORM SUBMIT HANDLER
+      // ================================
       document
         .getElementById("paymentForm")
         .addEventListener("submit", async (e) => {
@@ -2113,7 +2161,7 @@
             );
             const method = document.getElementById("paymentMethod").value;
             const email = document.getElementById("contactEmail").value;
-            const sendEmail =
+            const sendEmailCheckbox =
               document.getElementById("sendEmailReceipt").checked;
             const currentBalance = currentPayment.balance;
             const receiptNo =
@@ -2175,7 +2223,7 @@
             }
 
             if (amountInput < currentBalance) {
-              // Partial Payment
+              // ========== PARTIAL PAYMENT ==========
               const newBalance = currentBalance - amountInput;
               const accumulatedPaid =
                 (currentPayment.amountPaid || 0) + amountInput;
@@ -2193,6 +2241,7 @@
                   lastPaymentDate: new Date().toISOString(),
                   dueDate: nextDueDate.toISOString(),
                 });
+
               await db.collection("activityLogs").add({
                 action: "payment_partial",
                 details: `Partial payment of ₱${amountInput} received for ${currentPayment.plateNumber}. New Bal: ₱${newBalance}`,
@@ -2203,16 +2252,17 @@
                 vehicleId: currentPayment.id,
               });
 
-              // Save receipt to both collections
-              const receiptId = await saveOfficialReceipt(
+              // Save receipt
+              await saveOfficialReceipt(
                 "Partial",
                 amountInput,
                 newBalance,
                 method
               );
 
-              if (sendEmail && email) {
-                const rData = {
+              // Send email if enabled
+              if (sendEmailCheckbox && email) {
+                const receiptData = {
                   receiptNo: receiptNo,
                   date: new Date().toLocaleDateString(),
                   plate: currentPayment.plateNumber,
@@ -2220,20 +2270,19 @@
                   newBalance: `₱${newBalance.toLocaleString()}`,
                   nextDueDate: nextDueDate.toLocaleDateString(),
                 };
-                await sendPaymentEmail(
+                await sendPartialPaymentEmail(
                   email,
                   currentPayment.ownerName,
-                  rData,
-                  "partial"
+                  receiptData
                 );
               }
-              // Replaced Alert with Modal
+
               showSuccessModal(
                 "Partial Payment Recorded",
                 `Payment processed successfully! Receipt #${receiptNo} has been saved. Balance updated and Due Date extended.`
               );
             } else {
-              // Full Payment
+              // ========== FULL PAYMENT ==========
               await db
                 .collection("payments")
                 .doc(currentPayment.paymentId)
@@ -2244,10 +2293,14 @@
                   cashierId: currentUser.uid,
                   paymentDate: new Date().toISOString(),
                 });
+
               await db
                 .collection("impoundedVehicles")
                 .doc(currentPayment.id)
-                .update({ status: "paid" });
+                .update({
+                  status: "paid",
+                });
+
               await db.collection("activityLogs").add({
                 action: "payment_processed",
                 details: `Full payment of ₱${amountInput} received for ${currentPayment.plateNumber}. Method: ${method}`,
@@ -2258,16 +2311,12 @@
                 vehicleId: currentPayment.id,
               });
 
-              // Save receipt to both collections
-              const receiptId = await saveOfficialReceipt(
-                "Full",
-                amountInput,
-                0,
-                method
-              );
+              // Save receipt
+              await saveOfficialReceipt("Full", amountInput, 0, method);
 
-              if (sendEmail && email) {
-                const rData = {
+              // Send email if enabled
+              if (sendEmailCheckbox && email) {
+                const receiptData = {
                   receiptNo: receiptNo,
                   date: new Date().toLocaleDateString(),
                   plate: currentPayment.plateNumber,
@@ -2275,14 +2324,13 @@
                   paid: `₱${amountInput.toLocaleString()}`,
                   change: document.getElementById("receiptChange").textContent,
                 };
-                await sendPaymentEmail(
+                await sendFullPaymentEmail(
                   email,
                   currentPayment.ownerName,
-                  rData,
-                  "full"
+                  receiptData
                 );
               }
-              // Replaced Alert with Modal
+
               showSuccessModal(
                 "Full Payment Successful",
                 `Vehicle has been marked as paid and released. Receipt #${receiptNo} has been saved.`
