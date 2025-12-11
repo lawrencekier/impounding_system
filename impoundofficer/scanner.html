@@ -781,21 +781,9 @@
             ? parseCurrency(docFeeData.amount)
             : 300;
 
-          // 5. Get Administrative Fee
-          const adminFeeData = feesData.find(
-            (f) => f.type === "Administrative Fee"
-          );
-          const administrativeFee = adminFeeData
-            ? parseCurrency(adminFeeData.amount)
-            : 500;
-
           // Calculate Grand Total
           totalFees =
-            violationTotal +
-            storageFeeTotal +
-            towingFee +
-            documentationFee +
-            administrativeFee;
+            violationTotal + storageFeeTotal + towingFee + documentationFee;
 
           // Build fees breakdown HTML
           additionalFeesHtml = `
@@ -824,10 +812,7 @@
           <span>₱${documentationFee.toLocaleString()}</span>
         </div>
         
-        <div style="display:flex; justify-content:space-between; font-size:13px; color:#7f1d1d; margin-bottom:4px;">
-          <span>Administrative Fee</span>
-          <span>₱${administrativeFee.toLocaleString()}</span>
-        </div>
+        
       </div>
     `;
         } catch (error) {
