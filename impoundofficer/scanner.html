@@ -678,132 +678,224 @@
         // Format the impound date properly
         const formattedDate = formatFirestoreDate(data.impoundDate);
 
-        // --- FETCH AND CALCULATE FEES ---
+        // --- CALCULATE FEES LIKE IN CASHIER PAGE ---
         let additionalFeesHtml = "";
-        let totalAdditionalFees = 0;
-        let grandTotal = 0;
-        const baseFine = parseFloat(data.fineAmount) || 0;
+        let totalFees = 0;
 
-        try {
-          // Query the 'fees' collection where 'vehicleId' equals the current document ID
-          // Note: Ensure your fees documents have a 'vehicleId' field matching this vehicle's ID
-          const feesQuery = query(
-            collection(db, "fees"),
-            where("vehicleId", "==", docId)
-          );
-
-          const feesSnapshot = await getDocs(feesQuery);
-
-          if (!feesSnapshot.empty) {
-            additionalFeesHtml += `<div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed rgba(239, 68, 68, 0.3);">`;
-            additionalFeesHtml += `<div style="font-size: 11px; font-weight: 700; color: #b91c1c; text-transform: uppercase; margin-bottom: 8px;">Breakdown of Fees</div>`;
-
-            // Add Base Fine to the breakdown list for clarity
-            additionalFeesHtml += `
-                <div style="display:flex; justify-content:space-between; font-size:13px; color:#7f1d1d; margin-bottom:4px;">
-                    <span>Base Violation Fine</span>
-                    <span>₱${baseFine.toLocaleString()}</span>
-                </div>
-            `;
-
-            feesSnapshot.forEach((doc) => {
-              const feeData = doc.data();
-              const feeAmount = parseFloat(feeData.amount) || 0;
-              const feeDesc = feeData.description || "Additional Fee";
-
-              totalAdditionalFees += feeAmount;
-
-              additionalFeesHtml += `
-                <div style="display:flex; justify-content:space-between; font-size:13px; color:#7f1d1d; margin-bottom:4px;">
-                    <span>${feeDesc}</span>
-                    <span>+₱${feeAmount.toLocaleString()}</span>
-                </div>
-              `;
-            });
-            additionalFeesHtml += `</div>`;
-          }
-        } catch (error) {
-          console.error("Error fetching fees:", error);
-          // Don't block display if fees fail, just log it
+        // Helper function to parse currency
+        function parseCurrency(value) {
+          if (typeof value === "number") return value;
+          if (!value) return 0;
+          return parseFloat(value.toString().replace(/[P₱,\s]/g, "")) || 0;
         }
 
-        // Calculate Grand Total
-        grandTotal = baseFine + totalAdditionalFees;
+        // Calculate days impounded
+        function calculateDaysImpounded(dateStr) {
+          try {
+            let impoundDate;
+
+            // Handle Firestore Timestamp
+            if (dateStr && typeof dateStr.toDate === "function") {
+              impoundDate = dateStr.toDate();
+            }
+            // Handle Date object
+            else if (dateStr instanceof Date) {
+              impoundDate = dateStr;
+            }
+            // Handle string
+            else if (typeof dateStr === "string") {
+              impoundDate = new Date(dateStr);
+            }
+            // Handle number (timestamp)
+            else if (typeof dateStr === "number") {
+              impoundDate = new Date(dateStr);
+            } else {
+              return 1;
+            }
+
+            const now = new Date();
+            const diffTime = Math.abs(now - impoundDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return Math.max(1, diffDays);
+          } catch (error) {
+            console.error("Error calculating days impounded:", error);
+            return 1;
+          }
+        }
+
+        try {
+          // Fetch violations to get fine amounts
+          const violationsSnapshot = await getDocs(
+            collection(db, "violations")
+          );
+          const violationsData = [];
+          violationsSnapshot.forEach((doc) => {
+            violationsData.push({ id: doc.id, ...doc.data() });
+          });
+
+          // Fetch fee types (Storage, Towing, Documentation)
+          const feesSnapshot = await getDocs(collection(db, "fees"));
+          const feesData = [];
+          feesSnapshot.forEach((doc) => {
+            feesData.push({ id: doc.id, ...doc.data() });
+          });
+
+          // 1. Calculate Violation Fines
+          let violationTotal = 0;
+          let violationCodes = [];
+
+          // Get violation codes from vehicle data
+          if (data.violations && Array.isArray(data.violations)) {
+            violationCodes = data.violations;
+          } else if (data.violationCode) {
+            violationCodes = data.violationCode.split(",").map((c) => c.trim());
+          }
+
+          violationCodes.forEach((code) => {
+            const violation = violationsData.find((v) => v.code === code);
+            if (violation) {
+              const fineAmount = parseCurrency(violation.fineAmount);
+              violationTotal += fineAmount;
+            }
+          });
+
+          // 2. Calculate Storage Fee
+          const daysImpounded = calculateDaysImpounded(data.impoundDate);
+          const storageFeeData = feesData.find((f) => f.type === "Storage Fee");
+          const dailyStorageRate = storageFeeData
+            ? parseCurrency(storageFeeData.amount)
+            : 200;
+          const storageFeeTotal = dailyStorageRate * daysImpounded;
+
+          // 3. Get Towing Fee
+          const towingFeeData = feesData.find((f) => f.type === "Towing Fee");
+          const towingFee = towingFeeData
+            ? parseCurrency(towingFeeData.amount)
+            : 1500;
+
+          // 4. Get Documentation Fee
+          const docFeeData = feesData.find(
+            (f) => f.type === "Documentation Fee"
+          );
+          const documentationFee = docFeeData
+            ? parseCurrency(docFeeData.amount)
+            : 300;
+
+          // 5. Get Administrative Fee
+          const adminFeeData = feesData.find(
+            (f) => f.type === "Administrative Fee"
+          );
+          const administrativeFee = adminFeeData
+            ? parseCurrency(adminFeeData.amount)
+            : 500;
+
+          // Calculate Grand Total
+          totalFees =
+            violationTotal +
+            storageFeeTotal +
+            towingFee +
+            documentationFee +
+            administrativeFee;
+
+          // Build fees breakdown HTML
+          additionalFeesHtml = `
+      <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed rgba(239, 68, 68, 0.3);">
+        <div style="font-size: 11px; font-weight: 700; color: #b91c1c; text-transform: uppercase; margin-bottom: 8px;">
+          Fee Breakdown
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; font-size:13px; color:#7f1d1d; margin-bottom:4px;">
+          <span>Violation Fines</span>
+          <span>₱${violationTotal.toLocaleString()}</span>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; font-size:13px; color:#7f1d1d; margin-bottom:4px;">
+          <span>Storage Fee (${daysImpounded} days)</span>
+          <span>₱${storageFeeTotal.toLocaleString()}</span>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; font-size:13px; color:#7f1d1d; margin-bottom:4px;">
+          <span>Towing Fee</span>
+          <span>₱${towingFee.toLocaleString()}</span>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; font-size:13px; color:#7f1d1d; margin-bottom:4px;">
+          <span>Documentation Fee</span>
+          <span>₱${documentationFee.toLocaleString()}</span>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; font-size:13px; color:#7f1d1d; margin-bottom:4px;">
+          <span>Administrative Fee</span>
+          <span>₱${administrativeFee.toLocaleString()}</span>
+        </div>
+      </div>
+    `;
+        } catch (error) {
+          console.error("Error fetching fees:", error);
+          // Fallback to basic fine if fee calculation fails
+          totalFees = parseCurrency(data.fineAmount) || 0;
+        }
 
         resultContent.innerHTML = `
-                <div class="vehicle-header">
-                    <div class="plate-number">${data.plateNumber || "N/A"}</div>
-                    <div class="vehicle-model">${data.vehicleColor || ""} ${
+    <div class="vehicle-header">
+      <div class="plate-number">${data.plateNumber || "N/A"}</div>
+      <div class="vehicle-model">${data.vehicleColor || ""} ${
           data.vehicleModel || ""
         } ${data.vehicleType || ""}</div>
-                    <span class="status-badge">${status}</span>
-                </div>
-                
-                <div class="info-group">
-                    <div class="info-row">
-                        <span class="info-label">Reference No.</span>
-                        <span class="info-value" style="font-family: monospace; font-weight: bold; color: var(--primary);">${referenceNumber}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Owner Name</span>
-                        <span class="info-value">${
-                          data.ownerName || "N/A"
-                        }</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Impound Date</span>
-                        <span class="info-value">${formattedDate}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Officer</span>
-                        <span class="info-value">${
-                          data.impoundingOfficerName || "Authorized Officer"
-                        }</span>
-                    </div>
+      <span class="status-badge">${status}</span>
+    </div>
+    
+    <div class="info-group">
+      <div class="info-row">
+        <span class="info-label">Reference No.</span>
+        <span class="info-value" style="font-family: monospace; font-weight: bold; color: var(--primary);">${referenceNumber}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Owner Name</span>
+        <span class="info-value">${data.ownerName || "N/A"}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Impound Date</span>
+        <span class="info-value">${formattedDate}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Officer</span>
+        <span class="info-value">${
+          data.impoundingOfficerName || "Authorized Officer"
+        }</span>
+      </div>
 
-                    ${
-                      data.conditionNotes
-                        ? `
-                    <div class="info-row" style="display:block; margin-top:10px;">
-                        <span class="info-label" style="display:block; margin-bottom:5px;">Condition Notes:</span>
-                        <div style="font-size:13px; color:var(--text-main); background:#f8fafc; padding:10px; border-radius:6px;">
-                            ${data.conditionNotes}
-                        </div>
-                    </div>`
-                        : ""
-                    }
-
-                    <div class="violation-box">
-                        <div class="violation-title">Violation Details</div>
-                        <div class="violation-desc">
-                            ${
-                              data.violationDescription ||
-                              data.violationCode ||
-                              "No description available"
-                            }
-                        </div>
-
-                        ${additionalFeesHtml}
-
-                        <div class="fine-total">
-                            <span>Total Payable</span>
-                            <span>₱${grandTotal.toLocaleString()}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
+      ${
+        data.conditionNotes
+          ? `
+      <div class="info-row" style="display:block; margin-top:10px;">
+        <span class="info-label" style="display:block; margin-bottom:5px;">Condition Notes:</span>
+        <div style="font-size:13px; color:var(--text-main); background:#f8fafc; padding:10px; border-radius:6px;">
+          ${data.conditionNotes}
+        </div>
+      </div>`
+          : ""
       }
 
-      function showError(message) {
-        document.getElementById("resultContent").innerHTML = `
-                <div style="padding:30px; text-align:center;">
-                    <div class="error-message">
-                        <i class="fas fa-exclamation-circle"></i> ${message}
-                    </div>
-                </div>
-            `;
-        document.getElementById("resultSection").style.display = "block";
-        document.getElementById("scannerSection").style.display = "none";
+      <div class="violation-box">
+        <div class="violation-title">Violation Details</div>
+        <div class="violation-desc">
+          ${
+            data.violationDescription ||
+            data.violationCode ||
+            "No description available"
+          }
+        </div>
+
+        ${additionalFeesHtml}
+
+        <div class="fine-total">
+          <span>Total Payable</span>
+          <span>₱${totalFees.toLocaleString()}</span>
+        </div>
+      </div>
+    </div>
+  `;
       }
 
       // --- Expose functions to window for HTML buttons ---
