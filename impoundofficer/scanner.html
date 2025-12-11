@@ -578,7 +578,8 @@
 
           if (docSnap.exists()) {
             const vehicleData = docSnap.data();
-            displayVehicleInfo(vehicleData, docSnap.id);
+            // Added await because displayVehicleInfo is now async to fetch fees
+            await displayVehicleInfo(vehicleData, docSnap.id);
           } else {
             showError("Vehicle not found in database. Please check the ID.");
           }
@@ -628,7 +629,7 @@
           }
 
           if (vehicleResult && vehicleResult.data) {
-            displayVehicleInfo(vehicleResult.data, vehicleResult.id);
+            await displayVehicleInfo(vehicleResult.data, vehicleResult.id);
           } else {
             showError(
               `No vehicle found with this ${
@@ -654,7 +655,8 @@
           '<div class="loading"><i class="fas fa-circle-notch fa-spin"></i> Loading information...</div>';
       }
 
-      function displayVehicleInfo(data, docId) {
+      // MODIFIED: This function is now async to fetch fees from 'fees' collection
+      async function displayVehicleInfo(data, docId) {
         // Stop scanner if running
         if (scanner) {
           scanner.clear();
@@ -666,9 +668,6 @@
 
         const resultContent = document.getElementById("resultContent");
 
-        // Format Currency
-        const fine = (data.fineAmount || 0).toLocaleString();
-
         // Status Logic
         const status = (data.status || "Impounded").toUpperCase();
 
@@ -679,10 +678,57 @@
         // Format the impound date properly
         const formattedDate = formatFirestoreDate(data.impoundDate);
 
-        // Debug log to see what's in the data
-        console.log("Vehicle Data:", data);
-        console.log("Impound Date raw:", data.impoundDate);
-        console.log("Impound Date formatted:", formattedDate);
+        // --- FETCH AND CALCULATE FEES ---
+        let additionalFeesHtml = "";
+        let totalAdditionalFees = 0;
+        let grandTotal = 0;
+        const baseFine = parseFloat(data.fineAmount) || 0;
+
+        try {
+          // Query the 'fees' collection where 'vehicleId' equals the current document ID
+          // Note: Ensure your fees documents have a 'vehicleId' field matching this vehicle's ID
+          const feesQuery = query(
+            collection(db, "fees"),
+            where("vehicleId", "==", docId)
+          );
+
+          const feesSnapshot = await getDocs(feesQuery);
+
+          if (!feesSnapshot.empty) {
+            additionalFeesHtml += `<div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed rgba(239, 68, 68, 0.3);">`;
+            additionalFeesHtml += `<div style="font-size: 11px; font-weight: 700; color: #b91c1c; text-transform: uppercase; margin-bottom: 8px;">Breakdown of Fees</div>`;
+
+            // Add Base Fine to the breakdown list for clarity
+            additionalFeesHtml += `
+                <div style="display:flex; justify-content:space-between; font-size:13px; color:#7f1d1d; margin-bottom:4px;">
+                    <span>Base Violation Fine</span>
+                    <span>₱${baseFine.toLocaleString()}</span>
+                </div>
+            `;
+
+            feesSnapshot.forEach((doc) => {
+              const feeData = doc.data();
+              const feeAmount = parseFloat(feeData.amount) || 0;
+              const feeDesc = feeData.description || "Additional Fee";
+
+              totalAdditionalFees += feeAmount;
+
+              additionalFeesHtml += `
+                <div style="display:flex; justify-content:space-between; font-size:13px; color:#7f1d1d; margin-bottom:4px;">
+                    <span>${feeDesc}</span>
+                    <span>+₱${feeAmount.toLocaleString()}</span>
+                </div>
+              `;
+            });
+            additionalFeesHtml += `</div>`;
+          }
+        } catch (error) {
+          console.error("Error fetching fees:", error);
+          // Don't block display if fees fail, just log it
+        }
+
+        // Calculate Grand Total
+        grandTotal = baseFine + totalAdditionalFees;
 
         resultContent.innerHTML = `
                 <div class="vehicle-header">
@@ -736,9 +782,12 @@
                               "No description available"
                             }
                         </div>
+
+                        ${additionalFeesHtml}
+
                         <div class="fine-total">
-                            <span>Total Fine</span>
-                            <span>₱${fine}</span>
+                            <span>Total Payable</span>
+                            <span>₱${grandTotal.toLocaleString()}</span>
                         </div>
                     </div>
                 </div>
@@ -812,6 +861,7 @@
             // Try to search by reference number first
             searchByReferenceNumber(decodedText).then((result) => {
               if (result) {
+                // Must handle async here, though displayVehicleInfo does the rendering
                 displayVehicleInfo(result.data, result.id);
               } else {
                 // If not found by reference, try as document ID

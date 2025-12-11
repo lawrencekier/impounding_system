@@ -546,6 +546,207 @@
         border-radius: 12px;
       }
 
+      /* Mobile Bottom Navigation */
+      .mobile-bottom-nav {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-top: 1px solid var(--border);
+        z-index: 1000;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        padding: 10px 0;
+      }
+
+      .mobile-bottom-nav ul {
+        display: flex;
+        justify-content: space-around;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .mobile-bottom-nav li {
+        flex: 1;
+        text-align: center;
+      }
+
+      .mobile-bottom-nav a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        color: var(--text-muted);
+        padding: 8px 5px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        font-size: 12px;
+      }
+
+      .mobile-bottom-nav a i {
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
+
+      .mobile-bottom-nav a.active {
+        color: var(--primary);
+        background: var(--primary-soft);
+      }
+
+      .mobile-bottom-nav a:hover {
+        color: var(--primary);
+      }
+
+      .mobile-user-menu {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        border-bottom: 1px solid var(--border);
+        background: white;
+      }
+
+      .mobile-user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+        margin-right: 12px;
+      }
+
+      .mobile-user-info {
+        flex: 1;
+      }
+
+      .mobile-user-name {
+        font-weight: 700;
+        color: var(--text-main);
+        font-size: 14px;
+      }
+
+      .mobile-user-role {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      .mobile-menu-toggle {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 5px;
+      }
+
+      .mobile-sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 280px;
+        height: 100%;
+        background: var(--sidebar-bg);
+        color: white;
+        z-index: 2000;
+        transition: left 0.3s ease;
+        overflow-y: auto;
+      }
+
+      .mobile-sidebar.active {
+        left: 0;
+      }
+
+      .mobile-sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1999;
+        display: none;
+      }
+
+      .mobile-sidebar-overlay.active {
+        display: block;
+      }
+
+      .mobile-sidebar-header {
+        padding: 25px 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .mobile-sidebar-menu {
+        padding: 20px 15px;
+      }
+
+      .mobile-sidebar-menu ul {
+        list-style: none;
+      }
+
+      .mobile-sidebar-menu li {
+        margin-bottom: 8px;
+      }
+
+      .mobile-sidebar-menu a {
+        display: flex;
+        align-items: center;
+        padding: 14px 20px;
+        color: #94a3b8;
+        text-decoration: none;
+        transition: 0.2s;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 15px;
+      }
+
+      .mobile-sidebar-menu a.active {
+        background: var(--primary);
+        color: white;
+      }
+
+      .mobile-sidebar-menu i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+        font-size: 16px;
+      }
+
+      .mobile-sidebar-logout {
+        padding: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        margin-top: auto;
+      }
+
+      .mobile-sidebar-logout a {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        color: #fca5a5;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+
+      .mobile-sidebar-logout i {
+        margin-right: 12px;
+      }
+
       @media (max-width: 768px) {
         .sidebar {
           display: none;
@@ -553,6 +754,7 @@
         .main-content {
           margin-left: 0;
           padding: 20px;
+          padding-bottom: 100px; /* Extra space for bottom nav */
         }
         .form-row {
           flex-direction: column;
@@ -560,6 +762,32 @@
         }
         .violations-grid {
           grid-template-columns: 1fr;
+        }
+        .form-container {
+          padding: 20px;
+        }
+        .mobile-bottom-nav {
+          display: block;
+        }
+        .top-bar {
+          margin-bottom: 15px;
+        }
+        .page-title h1 {
+          font-size: 22px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .main-content {
+          padding: 15px;
+          padding-bottom: 100px;
+        }
+        .form-actions {
+          flex-direction: column;
+        }
+        .btn {
+          width: 100%;
+          justify-content: center;
         }
       }
       .text p {
@@ -614,6 +842,61 @@
         </ul>
       </div>
     </div>
+
+    <!-- Mobile Sidebar (hidden by default) -->
+    <div class="mobile-sidebar" id="mobileSidebar">
+      <div class="mobile-sidebar-header">
+        <div class="logo">
+          <svg viewBox="0 0 512 512" width="40" height="40" fill="white">
+            <path
+              d="M112,112c0-26.5,21.5-48,48-48h76.3c15.2-22,40.7-36.5,69.7-36.5s54.5,14.5,69.7,36.5H416c26.5,0,48,21.5,48,48v64H112V112z M306,83.5c-11.2,0-20.7,7.8-23.2,18.5h46.4C326.7,91.3,317.2,83.5,306,83.5z"
+            />
+            <path
+              d="M47.5,192C21.3,192,0,213.3,0,239.5v161C0,426.7,21.3,448,47.5,448h17.1c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h161.2c11,27.1,37.5,46.2,68.4,46.2s57.4-19.1,68.4-46.2h12.1c26.2,0,47.5-21.3,47.5-47.5v-161C560,213.3,538.7,192,512.5,192H47.5z M133,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S148.1,456.2,133,456.2z M431,456.2c-15.1,0-27.4-12.3-27.4-27.4s12.3-27.4,27.4-27.4s27.4,12.3,27.4,27.4S446.1,456.2,431,456.2z"
+            />
+          </svg>
+        </div>
+        <div class="text">
+          <h2>VIMS</h2>
+          <p style="color: #94a3b8; font-size: 12px">Impound Management</p>
+        </div>
+      </div>
+      <div class="mobile-user-menu">
+        <div class="mobile-user-avatar" id="mobileUserAvatar">OS</div>
+        <div class="mobile-user-info">
+          <div class="mobile-user-name" id="mobileUserName">Loading...</div>
+          <div class="mobile-user-role" id="mobileUserRole">Officer</div>
+        </div>
+        <button class="mobile-menu-toggle" id="closeMobileSidebar">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mobile-sidebar-menu">
+        <ul>
+          <li>
+            <a href="officer-dashboard.html"
+              ><i class="fas fa-chart-pie"></i> Dashboard</a
+            >
+          </li>
+          <li>
+            <a href="officer-add-vehicle.html" class="active"
+              ><i class="fas fa-plus-circle"></i> Add Vehicle</a
+            >
+          </li>
+          <li>
+            <a href="officer-my-vehicles.html"
+              ><i class="fas fa-layer-group"></i> Impounds</a
+            >
+          </li>
+        </ul>
+      </div>
+      <div class="mobile-sidebar-logout">
+        <a href="#" id="mobileLogoutBtn"
+          ><i class="fas fa-sign-out-alt"></i> Logout</a
+        >
+      </div>
+    </div>
+    <div class="mobile-sidebar-overlay" id="mobileSidebarOverlay"></div>
 
     <div class="main-content">
       <div class="top-bar">
@@ -884,6 +1167,36 @@
       </div>
     </div>
 
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav">
+      <ul>
+        <li>
+          <a href="officer-dashboard.html">
+            <i class="fas fa-chart-pie"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="officer-add-vehicle.html" class="active">
+            <i class="fas fa-plus-circle"></i>
+            <span>Add Vehicle</span>
+          </a>
+        </li>
+        <li>
+          <a href="officer-my-vehicles.html">
+            <i class="fas fa-layer-group"></i>
+            <span>Impounds</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" id="mobileMenuBtn">
+            <i class="fas fa-bars"></i>
+            <span>Menu</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
     <div id="qrModal" class="modal">
       <div class="modal-content">
         <span class="close" id="closeModal">&times;</span>
@@ -1056,6 +1369,15 @@
       );
       const totalPenaltyDiv = document.getElementById("totalPenalty");
 
+      // Mobile Elements
+      const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+      const mobileSidebar = document.getElementById("mobileSidebar");
+      const mobileSidebarOverlay = document.getElementById(
+        "mobileSidebarOverlay"
+      );
+      const closeMobileSidebar = document.getElementById("closeMobileSidebar");
+      const mobileLogoutBtn = document.getElementById("mobileLogoutBtn");
+
       // Dropdown Elements
       const userMenuBtn = document.getElementById("userMenuBtn");
       const profileDropdown = document.getElementById("profileDropdown");
@@ -1071,6 +1393,23 @@
         } else {
           window.location.href = "../index.html";
         }
+      });
+
+      // --- MOBILE NAVIGATION LOGIC ---
+      mobileMenuBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        mobileSidebar.classList.add("active");
+        mobileSidebarOverlay.classList.add("active");
+      });
+
+      closeMobileSidebar.addEventListener("click", () => {
+        mobileSidebar.classList.remove("active");
+        mobileSidebarOverlay.classList.remove("active");
+      });
+
+      mobileSidebarOverlay.addEventListener("click", () => {
+        mobileSidebar.classList.remove("active");
+        mobileSidebarOverlay.classList.remove("active");
       });
 
       // --- DROPDOWN LOGIC ---
@@ -1094,6 +1433,7 @@
       document
         .getElementById("logoutBtnDropdown")
         .addEventListener("click", logout);
+      mobileLogoutBtn.addEventListener("click", logout);
 
       async function loadUserData(firebaseUser) {
         try {
@@ -1131,7 +1471,7 @@
           .substring(0, 2)
           .toUpperCase();
 
-        // Update UI
+        // Update Desktop UI
         document.getElementById("userName").textContent = name;
         document.getElementById("userRole").textContent = role.toUpperCase();
         document.getElementById("userAvatar").textContent = initials;
@@ -1140,6 +1480,12 @@
         document.getElementById("dropdownRole").textContent =
           role.toUpperCase();
         document.getElementById("dropdownAvatar").textContent = initials;
+
+        // Update Mobile UI
+        document.getElementById("mobileUserName").textContent = name;
+        document.getElementById("mobileUserRole").textContent =
+          role.toUpperCase();
+        document.getElementById("mobileUserAvatar").textContent = initials;
       }
 
       async function logout() {
@@ -1551,6 +1897,14 @@
       window.onclick = (e) => {
         if (e.target == qrModal) qrModal.style.display = "none";
       };
+
+      // Close mobile sidebar when clicking on links
+      document.querySelectorAll(".mobile-sidebar-menu a").forEach((link) => {
+        link.addEventListener("click", () => {
+          mobileSidebar.classList.remove("active");
+          mobileSidebarOverlay.classList.remove("active");
+        });
+      });
 
       // Init Date
       document.getElementById("impoundDate").value = new Date()
